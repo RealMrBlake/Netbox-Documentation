@@ -1,8 +1,11 @@
 from pathlib import Path
+import mimetypes
+import tinymce
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.db import transaction
+from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
 from django.utils.text import slugify
 from django.views import View
@@ -12,6 +15,21 @@ from .forms import DocumentForm, AssignmentForm, ImportForm
 from .importers import ImportFailure, import_document
 from .models import Document, DocumentAssignment, DocumentAttachment
 from .tables import DocumentTable, AssignmentTable
+
+
+class EditorAssetView(View):
+    """Serve the bundled editor assets when NetBox's static proxy is unavailable."""
+
+    def get(self, request, asset_path):
+        root = (Path(tinymce.__file__).resolve().parent / "static" / "tinymce").resolve()
+        candidate = (root / asset_path).resolve()
+        if root not in candidate.parents or not candidate.is_file():
+            raise Http404
+        content_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
+        response = FileResponse(candidate.open("rb"), content_type=content_type)
+        response["Cache-Control"] = "public, max-age=31536000, immutable"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
 
 
 class DocumentListView(generic.ObjectListView):

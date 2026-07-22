@@ -3,6 +3,7 @@ from netbox.views.generic import ObjectChangeLogView
 from . import models, views
 
 urlpatterns = (
+    path("editor-assets/<path:asset_path>", views.EditorAssetView.as_view(), name="editor_asset"),
     path("", views.DocumentListView.as_view(), name="document_list"),
     path("documents/add/", views.DocumentEditView.as_view(), name="document_add"),
     path("documents/import/", views.DocumentImportView.as_view(), name="document_import"),
@@ -15,4 +16,3 @@ urlpatterns = (
     path("assignments/<int:pk>/edit/", views.AssignmentEditView.as_view(), name="documentassignment_edit"),
     path("assignments/<int:pk>/delete/", views.AssignmentDeleteView.as_view(), name="documentassignment_delete"),
 )
-

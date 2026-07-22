@@ -15,7 +15,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.2.1` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.2.2` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 
@@ -78,7 +78,7 @@ PLUGINS_CONFIG = {
 }
 ```
 
-TinyMCE wird als Python-Abhängigkeit des Plugins installiert und durch `collectstatic` lokal bereitgestellt. Der Editor benötigt deshalb weder Zugriff auf ein CDN noch einen API-Key. Das verwendete TinyMCE wird im GPL-Modus betrieben. Kann das Script nicht geladen werden, bleibt als Rückfall ein normales HTML-Textfeld verfügbar.
+TinyMCE wird als Python-Abhängigkeit des Plugins installiert und über einen lokalen, gecachten Plugin-Endpunkt bereitgestellt. `collectstatic` übernimmt die Dateien zusätzlich in NetBox. Der Editor benötigt deshalb weder Zugriff auf ein CDN noch einen API-Key. Das verwendete TinyMCE wird im GPL-Modus betrieben. Kann das Script nicht geladen werden, bleibt als Rückfall ein normales HTML-Textfeld verfügbar.
 
 Danach die Migrationen und statischen Dateien aktualisieren und NetBox neu starten:
 

@@ -1,23 +1,24 @@
 {% extends 'generic/object_edit.html' %}
-{% load static %}
-
 {% block javascript %}
   {{ block.super }}
-  <script src="{% static 'tinymce/tinymce.min.js' %}"></script>
+  <script src="{% url 'plugins:netbox_documentation:editor_asset' asset_path='tinymce.min.js' %}"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
+      const editorAssetBase = "{% url 'plugins:netbox_documentation:editor_asset' asset_path='_' %}".replace(/_$/, '');
       if (typeof tinymce === 'undefined') {
         const editor = document.querySelector('[data-rich-text-editor]');
         if (editor) {
           const warning = document.createElement('div');
           warning.className = 'alert alert-warning';
-          warning.textContent = 'Der Rich-Text-Editor konnte nicht geladen werden. Der Inhalt kann als HTML bearbeitet werden.';
+          warning.textContent = 'Der Rich-Text-Editor konnte nicht vom lokalen Plugin-Endpunkt geladen werden. Bitte Browser-Konsole und Netzwerkprotokoll prüfen.';
           editor.parentNode.insertBefore(warning, editor);
         }
         return;
       }
       tinymce.init({
         selector: 'textarea[data-rich-text-editor]',
+        base_url: editorAssetBase.replace(/\/$/, ''),
+        suffix: '.min',
         license_key: 'gpl',
         height: 650,
         menubar: 'file edit view insert format tools table help',
