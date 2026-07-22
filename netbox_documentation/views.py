@@ -1,0 +1,93 @@
+from pathlib import Path
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.db import transaction
+from django.shortcuts import redirect, render
+from django.utils.text import slugify
+from django.views import View
+from netbox.views import generic
+from .filtersets import DocumentFilterSet, AssignmentFilterSet
+from .forms import DocumentForm, AssignmentForm, ImportForm
+from .importers import ImportFailure, import_document
+from .models import Document, DocumentAssignment, DocumentAttachment
+from .tables import DocumentTable, AssignmentTable
+
+
+class DocumentListView(generic.ObjectListView):
+    queryset = Document.objects.prefetch_related("assignments")
+    table = DocumentTable
+    filterset = DocumentFilterSet
+
+
+class DocumentView(generic.ObjectView):
+    queryset = Document.objects.prefetch_related("assignments", "attachments")
+
+
+class DocumentEditView(generic.ObjectEditView):
+    queryset = Document.objects.all()
+    form = DocumentForm
+
+
+class DocumentDeleteView(generic.ObjectDeleteView):
+    queryset = Document.objects.all()
+
+
+class AssignmentListView(generic.ObjectListView):
+    queryset = DocumentAssignment.objects.select_related("document", "assigned_object_type")
+    table = AssignmentTable
+    filterset = AssignmentFilterSet
+
+
+class AssignmentEditView(generic.ObjectEditView):
+    queryset = DocumentAssignment.objects.all()
+    form = AssignmentForm
+
+
+class AssignmentDeleteView(generic.ObjectDeleteView):
+    queryset = DocumentAssignment.objects.all()
+
+
+class DocumentImportView(PermissionRequiredMixin, View):
+    permission_required = "netbox_documentation.import_document"
+    template_name = "netbox_documentation/document_import.html"
+
+    def get(self, request):
+        return render(request, self.template_name, {"form": ImportForm()})
+
+    def post(self, request):
+        form = ImportForm(request.POST, request.FILES)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form})
+        upload = form.cleaned_data["file"]
+        try:
+            result = import_document(upload)
+        except (ImportFailure, Exception) as exc:
+            # Known conversion/library errors are presented without exposing a traceback.
+            form.add_error("file", f"Import fehlgeschlagen: {exc}")
+            return render(request, self.template_name, {"form": form})
+        with transaction.atomic():
+            document = form.cleaned_data.get("document")
+            if document:
+                separator = "\n\n---\n\n" if document.body else ""
+                document.body += separator + result.markdown
+                document.save()
+            else:
+                title = form.cleaned_data.get("title") or Path(upload.name).stem
+                base_slug = slugify(title)[:180] or "dokumentation"
+                slug = base_slug
+                counter = 2
+                while Document.objects.filter(slug=slug).exists():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
+                document = Document.objects.create(title=title, slug=slug, body=result.markdown)
+            keep = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("keep_imported_file", True)
+            if keep:
+                upload.seek(0)
+                DocumentAttachment.objects.create(document=document, file=upload,
+                    original_name=upload.name, content_type=upload.content_type or "", size=upload.size)
+        for warning in result.warnings:
+            messages.warning(request, warning)
+        messages.success(request, f"{upload.name} wurde importiert.")
+        return redirect(document)
+

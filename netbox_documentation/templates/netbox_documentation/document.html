@@ -1,0 +1,19 @@
+{% extends 'generic/object.html' %}
+{% load helpers %}
+{% block content %}
+<div class="row">
+  <div class="col col-md-9">
+    {% if object.summary %}<p class="lead">{{ object.summary }}</p>{% endif %}
+    <div class="card"><div class="card-body rendered-markdown">{{ object.body|render_markdown }}</div></div>
+  </div>
+  <div class="col col-md-3">
+    <div class="card"><h5 class="card-header">Zuordnungen</h5><div class="list-group list-group-flush">
+      {% for assignment in object.assignments.all %}<a class="list-group-item" href="{{ assignment.assigned_object.get_absolute_url }}">{{ assignment.assigned_object_type }}: {{ assignment.assigned_object }}</a>{% empty %}<div class="list-group-item text-muted">Noch nicht zugeordnet</div>{% endfor %}
+    </div></div>
+    {% if object.attachments.all %}<div class="card mt-3"><h5 class="card-header">Originaldateien</h5><div class="list-group list-group-flush">
+      {% for attachment in object.attachments.all %}<a class="list-group-item" href="{{ attachment.file.url }}">{{ attachment.original_name }}</a>{% endfor %}
+    </div></div>{% endif %}
+  </div>
+</div>
+{% endblock content %}
+

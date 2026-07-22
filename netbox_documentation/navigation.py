@@ -1,0 +1,17 @@
+from netbox.plugins import PluginMenu, PluginMenuButton, PluginMenuItem
+from utilities.choices import ButtonColorChoices
+
+menu = PluginMenu(
+    label="Dokumentation",
+    groups=(("Wiki", (
+        PluginMenuItem(link="plugins:netbox_documentation:document_list", link_text="Dokumentationen", buttons=(
+            PluginMenuButton(link="plugins:netbox_documentation:document_add", title="Neu", icon_class="mdi mdi-plus-thick", color=ButtonColorChoices.GREEN),
+            PluginMenuButton(link="plugins:netbox_documentation:document_import", title="Import", icon_class="mdi mdi-file-import", color=ButtonColorChoices.BLUE),
+        )),
+        PluginMenuItem(link="plugins:netbox_documentation:documentassignment_list", link_text="Zuordnungen", buttons=(
+            PluginMenuButton(link="plugins:netbox_documentation:documentassignment_add", title="Zuordnen", icon_class="mdi mdi-link-plus", color=ButtonColorChoices.GREEN),
+        )),
+    )),),
+    icon_class="mdi mdi-book-open-page-variant",
+)
+

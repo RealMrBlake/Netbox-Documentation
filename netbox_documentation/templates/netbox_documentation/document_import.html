@@ -1,0 +1,13 @@
+{% extends 'base/layout.html' %}
+{% load form_helpers %}
+{% block title %}Dokument importieren{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col col-md-8"><div class="card">
+  <h5 class="card-header">Word, Excel oder PDF importieren</h5>
+  <div class="card-body"><form method="post" enctype="multipart/form-data">{% csrf_token %}{% render_form form %}
+    <div class="text-muted mb-3">DOCX übernimmt Überschriften, Listen und Tabellen. XLSX wird je Tabellenblatt zu einer Markdown-Tabelle. PDF benötigt eine echte Textebene; Scan-OCR ist nicht enthalten.</div>
+    <button type="submit" class="btn btn-primary">Importieren</button>
+  </form></div>
+</div></div></div>
+{% endblock %}
+

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netbox-documentation"
+version = "0.1.0"
+description = "Integrated Markdown wiki and office document importer for NetBox"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+dependencies = [
+  "mammoth>=1.8,<2",
+  "openpyxl>=3.1,<4",
+  "pypdf>=5,<7",
+  "tabulate>=0.9,<1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "pytest-django>=4.9"]
+
+[tool.setuptools.packages.find]
+include = ["netbox_documentation*"]
+
+[tool.setuptools.package-data]
+netbox_documentation = ["templates/**/*.html", "static/**/*"]
+
+[tool.pytest.ini_options]
+python_files = ["test_*.py"]
