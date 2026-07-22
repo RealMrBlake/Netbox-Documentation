@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ object.title }} – Druckansicht</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef1f4; color: #1f2937; font: 11pt Arial, Helvetica, sans-serif; line-height: 1.5; }
+    .toolbar { position: sticky; top: 0; z-index: 2; display: flex; justify-content: center; gap: .75rem; padding: .8rem; background: #fff; border-bottom: 1px solid #ccd2d8; }
+    .toolbar button, .toolbar a { border: 1px solid #6c757d; border-radius: .3rem; padding: .55rem .9rem; background: #fff; color: #212529; text-decoration: none; cursor: pointer; font: inherit; }
+    .toolbar button { color: #fff; background: #4263eb; border-color: #4263eb; }
+    article { width: min(210mm, calc(100% - 2rem)); min-height: 297mm; margin: 1.5rem auto; padding: 18mm 17mm; background: #fff; box-shadow: 0 .2rem 1rem rgba(0,0,0,.12); }
+    h1 { margin: 0 0 .25rem; font-size: 24pt; line-height: 1.2; }
+    .summary { color: #4b5563; font-size: 13pt; margin: 0 0 1rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; padding: .65rem 0; margin-bottom: 1.4rem; color: #6b7280; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 9pt; }
+    .content img { max-width: 100%; height: auto; }
+    .content table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+    .content th, .content td { border: 1px solid #777; padding: .35rem .5rem; vertical-align: top; }
+    .content pre, .content code { white-space: pre-wrap; overflow-wrap: anywhere; font-family: Consolas, monospace; }
+    .content a { color: #174ea6; overflow-wrap: anywhere; }
+    @page { size: A4; margin: 15mm; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none !important; }
+      article { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+      a { color: inherit !important; text-decoration: none; }
+      table, figure, img, pre, blockquote { break-inside: avoid; }
+      h1, h2, h3, h4 { break-after: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" onclick="window.print()">Drucken / Als PDF speichern</button>
+    <a href="{{ object.get_absolute_url }}">Zurück zur Dokumentation</a>
+  </div>
+  <article>
+    <header>
+      <h1>{{ object.title }}</h1>
+      {% if object.summary %}<p class="summary">{{ object.summary }}</p>{% endif %}
+      <div class="meta">
+        {% if object.category %}<span>Ordner: {{ object.category }}</span>{% endif %}
+        <span>Stand: {{ object.last_updated|date:"d.m.Y H:i" }}</span>
+        {% if object.assignments.all %}<span>Zugeordnet: {% for assignment in object.assignments.all %}{{ assignment.assigned_object }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}
+      </div>
+    </header>
+    <main class="content">{{ object.rendered_body|safe }}</main>
+  </article>
+</body>
+</html>

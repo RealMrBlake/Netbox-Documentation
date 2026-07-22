@@ -1,5 +1,10 @@
 {% extends 'generic/object.html' %}
 {% load helpers %}
+{% block extra_controls %}
+  <a href="{% url 'plugins:netbox_documentation:document_print' pk=object.pk %}" target="_blank" class="btn btn-outline-secondary">
+    <i class="mdi mdi-printer"></i> Drucken / PDF
+  </a>
+{% endblock extra_controls %}
 {% block content %}
 <div class="row">
   <div class="col col-md-9">

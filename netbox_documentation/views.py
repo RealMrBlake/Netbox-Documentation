@@ -47,6 +47,18 @@ class DocumentView(generic.ObjectView):
     queryset = Document.objects.prefetch_related("assignments", "attachments")
 
 
+class DocumentPrintView(PermissionRequiredMixin, View):
+    permission_required = "netbox_documentation.view_document"
+    template_name = "netbox_documentation/document_print.html"
+
+    def get(self, request, pk):
+        document = get_object_or_404(
+            Document.objects.restrict(request.user, "view").select_related("category").prefetch_related("assignments"),
+            pk=pk,
+        )
+        return render(request, self.template_name, {"object": document})
+
+
 class DocumentEditView(generic.ObjectEditView):
     queryset = Document.objects.all()
     form = DocumentForm
