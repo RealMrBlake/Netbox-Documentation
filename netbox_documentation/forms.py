@@ -134,7 +134,7 @@ class ImportForm(forms.Form):
         required=False,
         label=help_label(
             "Excel-Tabellen glätten",
-            "Übernimmt alle Zellen ohne Tabelle in Lesereihenfolge als dokumentartigen Text. Es werden keine Datensatz- oder Feldbezeichnungen erzeugt.",
+            "Übernimmt normale Zellen ohne Tabelle als dokumentartigen Text. Nur in Excel ausdrücklich über Einfügen → Tabelle definierte Bereiche bleiben Tabellen.",
         ),
     )
     category = forms.ModelChoiceField(

@@ -5,6 +5,7 @@ import sys
 
 import pytest
 from openpyxl import Workbook
+from openpyxl.worksheet.table import Table
 
 
 spec = importlib.util.spec_from_file_location(
@@ -81,3 +82,24 @@ def test_excel_flatten_turns_cells_into_document_flow():
     assert "Datensatz" not in results[0].markdown
     assert "Feld" not in results[0].markdown
     assert "|" not in results[0].markdown
+
+
+def test_excel_flatten_preserves_explicit_excel_tables_only():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "Name"
+    sheet["B1"] = "IP"
+    sheet["A2"] = "web01"
+    sheet["B2"] = "10.0.0.1"
+    sheet["D1"] = "Normaler Hinweis"
+    sheet.add_table(Table(displayName="ServerTable", ref="A1:B2"))
+    stream = BytesIO()
+    workbook.save(stream)
+
+    results = import_excel_sheets(Upload(stream.getvalue(), "server.xlsx"), flatten=True)
+    markdown = results[0].markdown
+
+    assert "Normaler Hinweis" in markdown
+    assert "| Name" in markdown
+    assert "| web01" in markdown
+    assert "Datensatz" not in markdown

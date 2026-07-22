@@ -80,7 +80,7 @@ def _escape_markdown_text(value):
 
 def _xlsx(content, flatten=False):
     from openpyxl import load_workbook
-    workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
+    workbook = load_workbook(BytesIO(content), read_only=not flatten, data_only=True)
     sections = []
     for sheet in workbook.worksheets:
         rows = [["" if cell is None else str(cell) for cell in row] for row in sheet.iter_rows(values_only=True)]
@@ -88,7 +88,8 @@ def _xlsx(content, flatten=False):
             rows.pop()
         if not rows:
             continue
-        sections.append(f"## {sheet.title}\n\n{_render_excel_rows(rows, flatten)}")
+        rendered = _render_flattened_worksheet(sheet) if flatten else _render_excel_rows(rows)
+        sections.append(f"## {sheet.title}\n\n{rendered}")
     if not sections:
         raise ImportFailure("Die Arbeitsmappe enthält keine Daten.")
     return ImportResult("\n\n".join(sections))
@@ -131,7 +132,7 @@ def import_excel_sheets(upload, flatten=False) -> list[ExcelSheetResult]:
         if not rows and not images:
             continue
         if rows:
-            markdown = _render_excel_rows(rows, flatten)
+            markdown = _render_flattened_worksheet(sheet) if flatten else _render_excel_rows(rows)
         else:
             markdown = ""
         results.append(ExcelSheetResult(title=sheet.title, markdown=markdown, images=images))
@@ -143,6 +144,51 @@ def import_excel_sheets(upload, flatten=False) -> list[ExcelSheetResult]:
 def slugify_filename(value):
     value = re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip("-.")
     return value[:80] or "arbeitsblatt"
+
+
+def _render_flattened_worksheet(sheet):
+    """Flatten ordinary cells while preserving explicitly defined Excel tables."""
+    from openpyxl.utils.cell import range_boundaries
+
+    table_ranges = []
+    for table in sheet.tables.values():
+        min_col, min_row, max_col, max_row = range_boundaries(table.ref)
+        table_ranges.append((min_col, min_row, max_col, max_row))
+    table_ranges.sort(key=lambda item: (item[1], item[0]))
+
+    def containing_table(row, column):
+        for bounds in table_ranges:
+            min_col, min_row, max_col, max_row = bounds
+            if min_row <= row <= max_row and min_col <= column <= max_col:
+                return bounds
+        return None
+
+    blocks = []
+    rendered_tables = set()
+    for row_number in range(1, sheet.max_row + 1):
+        ordinary_values = []
+        tables_starting_here = []
+        for column_number in range(1, sheet.max_column + 1):
+            bounds = containing_table(row_number, column_number)
+            if bounds:
+                if bounds[1] == row_number and bounds not in rendered_tables:
+                    tables_starting_here.append(bounds)
+                    rendered_tables.add(bounds)
+                continue
+            value = sheet.cell(row=row_number, column=column_number).value
+            if value not in (None, ""):
+                ordinary_values.append(_escape_markdown_text(value))
+        if ordinary_values:
+            blocks.append("  \n".join(ordinary_values))
+        for min_col, min_row, max_col, max_row in tables_starting_here:
+            rows = []
+            for table_row in sheet.iter_rows(
+                min_row=min_row, max_row=max_row, min_col=min_col, max_col=max_col, values_only=True
+            ):
+                rows.append(["" if value is None else str(value) for value in table_row])
+            if rows:
+                blocks.append(_render_excel_rows(rows, flatten=False))
+    return "\n\n".join(blocks) or "_Keine Inhalte_"
 
 
 def _pdf(content):
