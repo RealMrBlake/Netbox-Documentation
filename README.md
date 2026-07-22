@@ -20,7 +20,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.3.3` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.3.4` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 
@@ -125,6 +125,7 @@ Nach Aktivierung stehen die üblichen NetBox-Plugin-Endpunkte bereit:
 - `/api/plugins/documentation/documents/`
 - `/api/plugins/documentation/assignments/`
 - `/api/plugins/documentation/folders/`
+- `/api/plugins/documentation/attachments/`
 
 ## Entwicklung und Tests
 

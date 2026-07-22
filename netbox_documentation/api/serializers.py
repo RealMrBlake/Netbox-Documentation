@@ -1,6 +1,6 @@
 from netbox.api.serializers import NetBoxModelSerializer
 from rest_framework import serializers
-from ..models import Document, DocumentAssignment, DocumentCategory
+from ..models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
 
 
 class DocumentSerializer(NetBoxModelSerializer):
@@ -25,3 +25,14 @@ class DocumentCategorySerializer(NetBoxModelSerializer):
     class Meta:
         model = DocumentCategory
         fields = ("id", "url", "display", "name", "slug", "parent", "description", "tags", "created", "last_updated")
+
+
+class DocumentAttachmentSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_documentation-api:documentattachment-detail")
+
+    class Meta:
+        model = DocumentAttachment
+        fields = (
+            "id", "url", "display", "document", "file", "original_name",
+            "content_type", "size", "tags", "created", "last_updated",
+        )
