@@ -24,7 +24,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.5.2` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.5.3` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 
@@ -125,7 +125,7 @@ Alte binäre `.doc`- und `.xls`-Dateien müssen vorher in `.docx` bzw. `.xlsx` k
 
 Für große Excel-Dateien kann auf der Importseite **„Excel mit mehreren Arbeitsblättern – je Blatt eine Dokumentation“** aktiviert werden. Dazu ist ein Zielordner verpflichtend. Jedes nicht leere Arbeitsblatt wird als eigene Dokumentation mit dem Blattnamen als Titel angelegt und erhält eine eigene Kopie der Original-Exceldatei als Anhang. Normale eingebettete PNG-, JPEG-, GIF- und WebP-Bilder werden dem jeweiligen Dokument als Medienanhang hinzugefügt. Diagramme, SmartArt, Steuerelemente und extern verknüpfte Bilder können nicht zuverlässig übernommen werden.
 
-Mit **„Excel-Tabellen glätten“** wird jede Datenzeile statt als breite Tabelle als kompakter Textblock aus Feldnamen und Wert importiert. Nicht geglättete Tabellen werden in der Dokumentansicht automatisch kompakt dargestellt und bei Bedarf innerhalb des Inhalts horizontal scrollbar, ohne das NetBox-Layout zu verbreitern.
+Mit **„Excel-Tabellen glätten“** werden die Zellen ohne künstliche Datensatz- oder Feldbezeichnungen in ihrer Lesereihenfolge übernommen. Zellen einer Excel-Zeile erscheinen als einzelne Textzeilen eines Absatzes; zwischen Excel-Zeilen wird ein Absatz eingefügt. Das Ergebnis ähnelt damit einer Übertragung nach Word ohne Tabelle. Nicht geglättete Tabellen werden in der Dokumentansicht automatisch kompakt dargestellt und bei Bedarf innerhalb des Inhalts horizontal scrollbar, ohne das NetBox-Layout zu verbreitern.
 
 ## REST-API
 

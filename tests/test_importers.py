@@ -67,7 +67,7 @@ def test_excel_multi_sheet_import_creates_one_result_per_sheet():
     assert "Leitstelle" in results[1].markdown
 
 
-def test_excel_flatten_turns_rows_into_field_value_blocks():
+def test_excel_flatten_turns_cells_into_document_flow():
     workbook = Workbook()
     sheet = workbook.active
     sheet.append(["Name", "IP"])
@@ -77,7 +77,7 @@ def test_excel_flatten_turns_rows_into_field_value_blocks():
 
     results = import_excel_sheets(Upload(stream.getvalue(), "server.xlsx"), flatten=True)
 
-    assert "### Datensatz 1" in results[0].markdown
-    assert "**Name:** db01" in results[0].markdown
-    assert "**IP:** 10.0.0.2" in results[0].markdown
+    assert results[0].markdown == "Name  \nIP\n\ndb01  \n10.0.0.2"
+    assert "Datensatz" not in results[0].markdown
+    assert "Feld" not in results[0].markdown
     assert "|" not in results[0].markdown

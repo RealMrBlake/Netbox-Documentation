@@ -60,17 +60,22 @@ def _render_excel_rows(rows, flatten=False):
     header, body = rows[0], rows[1:]
     if not flatten:
         return tabulate(body, headers=header, tablefmt="github")
+    # Document-style flattening: retain every cell in reading order without
+    # inventing record headings or field/value labels. Cells in one Excel row
+    # become lines in one paragraph; Excel rows are separated by a blank line.
     blocks = []
-    for number, row in enumerate(body, 1):
-        values = []
-        for column, value in zip(header, row):
-            if value == "":
-                continue
-            label = column or "Feld"
-            values.append(f"**{label}:** {value}")
+    for row in rows:
+        values = [_escape_markdown_text(value) for value in row if value != ""]
         if values:
-            blocks.append(f"### Datensatz {number}\n\n" + "  \n".join(values))
-    return "\n\n".join(blocks) or "_Keine Datensätze_"
+            blocks.append("  \n".join(values))
+    return "\n\n".join(blocks) or "_Keine Inhalte_"
+
+
+def _escape_markdown_text(value):
+    value = str(value).replace("\\", "\\\\")
+    for character in ("*", "_", "[", "]", "<", ">", "#", "|"):
+        value = value.replace(character, f"\\{character}")
+    return value.replace("\r\n", "  \n").replace("\r", "  \n").replace("\n", "  \n")
 
 
 def _xlsx(content, flatten=False):
