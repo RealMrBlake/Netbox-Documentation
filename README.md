@@ -20,19 +20,11 @@ Die Version `0.1.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven
 
 ### Installation aus dem Git-Repository
 
-Das Plugin kann direkt aus dem Git-Repository installiert werden. Zuerst das Repository auf dem NetBox-Server klonen:
-
-```bash
-cd /opt/netbox
-sudo git clone https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git
-sudo chown -R netbox:netbox /opt/netbox/Netbox-DokiWiki
-```
-
-Anschließend das Plugin im Python-Virtualenv von NetBox installieren:
+Das Plugin kann ohne vorheriges Klonen direkt aus dem Git-Repository in das Python-Virtualenv von NetBox installiert werden:
 
 ```bash
 source /opt/netbox/venv/bin/activate
-pip install /opt/netbox/Netbox-DokiWiki
+pip install git+https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git@main
 ```
 
 ### In `local_requirements.txt` eintragen
