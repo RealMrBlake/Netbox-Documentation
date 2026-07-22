@@ -81,6 +81,7 @@ class DocumentCategoryListView(generic.ObjectListView):
     queryset = DocumentCategory.objects.select_related("parent").prefetch_related("documents")
     table = DocumentCategoryTable
     filterset = DocumentCategoryFilterSet
+    actions = (AddObject, BulkImport, BulkDelete)
 
 
 class DocumentCategoryView(generic.ObjectView):
@@ -96,10 +97,17 @@ class DocumentCategoryDeleteView(generic.ObjectDeleteView):
     queryset = DocumentCategory.objects.all()
 
 
+class DocumentCategoryBulkDeleteView(generic.BulkDeleteView):
+    queryset = DocumentCategory.objects.all()
+    table = DocumentCategoryTable
+    filterset = DocumentCategoryFilterSet
+
+
 class AssignmentListView(generic.ObjectListView):
     queryset = DocumentAssignment.objects.select_related("document", "assigned_object_type")
     table = AssignmentTable
     filterset = AssignmentFilterSet
+    actions = (AddObject, BulkImport, BulkDelete)
 
 
 class AssignmentEditView(generic.ObjectEditView):
@@ -109,6 +117,12 @@ class AssignmentEditView(generic.ObjectEditView):
 
 class AssignmentDeleteView(generic.ObjectDeleteView):
     queryset = DocumentAssignment.objects.all()
+
+
+class AssignmentBulkDeleteView(generic.BulkDeleteView):
+    queryset = DocumentAssignment.objects.all()
+    table = AssignmentTable
+    filterset = AssignmentFilterSet
 
 
 class DocumentImportView(PermissionRequiredMixin, View):
