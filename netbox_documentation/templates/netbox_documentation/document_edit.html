@@ -1,0 +1,42 @@
+{% extends 'generic/object_edit.html' %}
+
+{% block javascript %}
+  {{ block.super }}
+  <script src="{{ config.editor_script_url }}" referrerpolicy="origin"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof tinymce === 'undefined') {
+        const editor = document.querySelector('[data-rich-text-editor]');
+        if (editor) {
+          const warning = document.createElement('div');
+          warning.className = 'alert alert-warning';
+          warning.textContent = 'Der Rich-Text-Editor konnte nicht geladen werden. Der Inhalt kann als HTML bearbeitet werden.';
+          editor.parentNode.insertBefore(warning, editor);
+        }
+        return;
+      }
+      tinymce.init({
+        selector: 'textarea[data-rich-text-editor]',
+        license_key: 'gpl',
+        height: 650,
+        menubar: 'file edit view insert format tools table help',
+        plugins: 'advlist anchor autolink charmap code fullscreen image link lists media preview searchreplace table visualblocks wordcount',
+        toolbar: [
+          'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor',
+          'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table link image media | removeformat code fullscreen'
+        ],
+        toolbar_mode: 'sliding',
+        table_toolbar: 'tableprops tablecellprops | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol | tablemergecells tablesplitcells | tabledelete',
+        font_family_formats: 'Arial=arial,helvetica,sans-serif; Calibri=calibri,arial,sans-serif; Courier New=courier new,courier,monospace; Georgia=georgia,palatino,serif; Times New Roman=times new roman,times,serif; Verdana=verdana,geneva,sans-serif',
+        font_size_formats: '8pt 9pt 10pt 11pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+        content_style: 'body { font-family: Arial, sans-serif; font-size: 11pt; padding: 1rem; } table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #adb5bd; padding: .45rem; }',
+        browser_spellcheck: true,
+        contextmenu: 'link image table',
+        promotion: false,
+        branding: false,
+        convert_unsafe_embeds: true,
+        relative_urls: false
+      });
+    });
+  </script>
+{% endblock javascript %}

@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
             ("custom_field_data", models.JSONField(blank=True, default=dict, encoder=netbox.models.features.CustomFieldJSONEncoder)),
             ("title", models.CharField(max_length=200)), ("slug", models.SlugField(max_length=200, unique=True)),
             ("body", models.TextField(blank=True, help_text="Markdown")), ("summary", models.CharField(blank=True, max_length=500)),
+            ("body_format", models.CharField(choices=[("html", "Rich Text"), ("markdown", "Markdown")], default="html", max_length=10)),
             ("is_published", models.BooleanField(default=True)),
             ("tags", models.ManyToManyField(blank=True, related_name="netbox_documentation_document_items", to="extras.tag")),
         ], options={"ordering": ("title",), "permissions": (("import_document", "Can import office documents"),)}),
@@ -39,4 +40,3 @@ class Migration(migrations.Migration):
         ], options={"ordering": ("original_name",)}),
         migrations.AddConstraint(model_name="documentassignment", constraint=models.UniqueConstraint(fields=("document", "assigned_object_type", "assigned_object_id"), name="netbox_documentation_documentassignment_unique_assignment")),
     ]
-

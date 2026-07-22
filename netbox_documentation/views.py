@@ -27,6 +27,7 @@ class DocumentView(generic.ObjectView):
 class DocumentEditView(generic.ObjectEditView):
     queryset = Document.objects.all()
     form = DocumentForm
+    template_name = "netbox_documentation/document_edit.html"
 
 
 class DocumentDeleteView(generic.ObjectDeleteView):
@@ -69,8 +70,12 @@ class DocumentImportView(PermissionRequiredMixin, View):
         with transaction.atomic():
             document = form.cleaned_data.get("document")
             if document:
+                imported_body = result.markdown
+                if document.body_format == "html":
+                    from markdown import markdown
+                    imported_body = markdown(imported_body, extensions=("extra", "sane_lists"))
                 separator = "\n\n---\n\n" if document.body else ""
-                document.body += separator + result.markdown
+                document.body += separator + imported_body
                 document.save()
             else:
                 title = form.cleaned_data.get("title") or Path(upload.name).stem
@@ -80,7 +85,7 @@ class DocumentImportView(PermissionRequiredMixin, View):
                 while Document.objects.filter(slug=slug).exists():
                     slug = f"{base_slug}-{counter}"
                     counter += 1
-                document = Document.objects.create(title=title, slug=slug, body=result.markdown)
+                document = Document.objects.create(title=title, slug=slug, body=result.markdown, body_format="markdown")
             keep = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("keep_imported_file", True)
             if keep:
                 upload.seek(0)
@@ -90,4 +95,3 @@ class DocumentImportView(PermissionRequiredMixin, View):
             messages.warning(request, warning)
         messages.success(request, f"{upload.name} wurde importiert.")
         return redirect(document)
-

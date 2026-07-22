@@ -4,7 +4,8 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Funktionen
 
-- Dokumentationen direkt in NetBox als Markdown schreiben und sicher gerendert anzeigen
+- Dokumentationen direkt in NetBox schreiben und als sicher bereinigten Rich Text anzeigen
+- Word-ähnlicher WYSIWYG-Editor mit Schriftarten, Schriftgrößen, Farben, Ausrichtung und Tabellen
 - Eine Dokumentation mehreren Objekten zuordnen und umgekehrt
 - Unterstützte Standardobjekte: Region, Standort, Location, Rack, Gerät, VM, VM-Cluster und Mandant/Kunde
 - DOCX, XLSX/XLSM, textbasierte PDF-, Markdown- und Textdateien importieren
@@ -14,7 +15,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.1.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.2.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 
@@ -63,6 +64,7 @@ PLUGINS_CONFIG = {
     "netbox_documentation": {
         "max_import_size_mb": 25,
         "keep_imported_file": True,
+        "editor_script_url": "https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js",
         "allowed_object_types": [
             "dcim.region",
             "dcim.site",
@@ -76,6 +78,8 @@ PLUGINS_CONFIG = {
     }
 }
 ```
+
+Der Rich-Text-Editor wird standardmäßig über jsDelivr geladen. In abgeschotteten Netzen kann TinyMCE 7 lokal unter NetBox `STATIC_ROOT` bereitgestellt und `editor_script_url` auf die interne URL gesetzt werden. Das verwendete TinyMCE wird im GPL-Modus betrieben. Kann das Script nicht geladen werden, bleibt als Rückfall ein normales HTML-Textfeld verfügbar.
 
 Danach die Migrationen und statischen Dateien aktualisieren und NetBox neu starten:
 

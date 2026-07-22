@@ -20,13 +20,23 @@ def allowed_content_types():
 
 class DocumentForm(NetBoxModelForm):
     slug = SlugField(slug_source="title")
-    body = forms.CharField(required=False, widget=forms.Textarea(attrs={
-        "rows": 28, "class": "font-monospace", "data-markdown-editor": "true"
-    }), help_text="Markdown wird unterstützt. HTML wird bei der Ausgabe sicher gefiltert.")
+    body = forms.CharField(required=False, label="Inhalt", widget=forms.Textarea(attrs={
+        "rows": 32, "class": "rich-text-editor", "data-rich-text-editor": "true"
+    }), help_text="Formatierter Text mit Tabellen, Farben, Schriftarten und Größen.")
+    body_format = forms.CharField(widget=forms.HiddenInput(), initial="html")
 
     class Meta:
         model = Document
-        fields = ("title", "slug", "summary", "body", "is_published", "tags")
+        fields = ("title", "slug", "summary", "body", "body_format", "is_published", "tags")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Legacy Markdown remains readable. Once edited in WYSIWYG mode it is
+        # converted to HTML so the editor never exposes Markdown as plain text.
+        if self.instance.pk and self.instance.body_format == "markdown" and not self.is_bound:
+            from markdown import markdown
+            self.initial["body"] = markdown(self.instance.body, extensions=("extra", "sane_lists"))
+            self.initial["body_format"] = "html"
 
 
 class AssignmentForm(NetBoxModelForm):

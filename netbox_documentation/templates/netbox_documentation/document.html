@@ -4,7 +4,7 @@
 <div class="row">
   <div class="col col-md-9">
     {% if object.summary %}<p class="lead">{{ object.summary }}</p>{% endif %}
-    <div class="card"><div class="card-body rendered-markdown">{{ object.body|render_markdown }}</div></div>
+    <div class="card"><div class="card-body rendered-markdown">{{ object.rendered_body|safe }}</div></div>
   </div>
   <div class="col col-md-3">
     <div class="card"><h5 class="card-header">Zuordnungen</h5><div class="list-group list-group-flush">
@@ -16,4 +16,3 @@
   </div>
 </div>
 {% endblock content %}
-

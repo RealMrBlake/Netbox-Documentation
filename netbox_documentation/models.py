@@ -5,10 +5,14 @@ from django.urls import reverse
 from netbox.models import NetBoxModel
 
 
+BODY_FORMAT_CHOICES = (("html", "Rich Text"), ("markdown", "Markdown"))
+
+
 class Document(NetBoxModel):
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
     body = models.TextField(blank=True, help_text="Markdown")
+    body_format = models.CharField(max_length=10, choices=BODY_FORMAT_CHOICES, default="html")
     summary = models.CharField(max_length=500, blank=True)
     is_published = models.BooleanField(default=True)
 
@@ -21,6 +25,35 @@ class Document(NetBoxModel):
 
     def get_absolute_url(self):
         return reverse("plugins:netbox_documentation:document", args=[self.pk])
+
+    def rendered_body(self):
+        """Render Markdown/HTML and remove executable or unsafe markup."""
+        import bleach
+        from bleach.css_sanitizer import CSSSanitizer
+        from markdown import markdown
+
+        value = markdown(self.body, extensions=("extra", "sane_lists")) if self.body_format == "markdown" else self.body
+        tags = {
+            "a", "abbr", "blockquote", "br", "caption", "code", "col", "colgroup", "div",
+            "em", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "img", "li", "ol", "p",
+            "pre", "span", "strong", "sub", "sup", "table", "tbody", "td", "tfoot", "th",
+            "thead", "tr", "u", "ul",
+        }
+        attributes = {
+            "a": ("href", "title", "target", "rel"),
+            "img": ("src", "alt", "title", "width", "height"),
+            "table": ("class", "style"),
+            "th": ("colspan", "rowspan", "scope", "style"),
+            "td": ("colspan", "rowspan", "style"),
+            "col": ("span", "style"),
+            "*": ("class", "style"),
+        }
+        css = CSSSanitizer(allowed_css_properties={
+            "background-color", "border", "border-color", "border-style", "border-width",
+            "color", "font-family", "font-size", "font-style", "font-weight", "height",
+            "margin-left", "text-align", "text-decoration", "vertical-align", "width",
+        })
+        return bleach.clean(value, tags=tags, attributes=attributes, protocols=("http", "https", "mailto"), css_sanitizer=css)
 
 
 class DocumentAssignment(NetBoxModel):
@@ -57,4 +90,3 @@ class DocumentAttachment(NetBoxModel):
 
     def __str__(self):
         return self.original_name
-
