@@ -137,8 +137,8 @@ class ImportForm(forms.Form):
             "Wandelt jede Tabellenzeile in einen lesbaren Textblock aus Feldnamen und Wert um, statt eine Tabelle zu erzeugen.",
         ),
     )
-    category = DynamicModelChoiceField(
-        queryset=DocumentCategory.objects.all(), required=False,
+    category = forms.ModelChoiceField(
+        queryset=DocumentCategory.objects.none(), required=False,
         label=help_label("Zielordner / Kategorie", "Für den Excel-Mehrblattimport verpflichtend."),
     )
 
