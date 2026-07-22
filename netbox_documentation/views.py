@@ -16,7 +16,7 @@ from .forms import (
     ArchiveExportForm, ArchiveImportForm, AssignmentForm, DocumentCategoryForm,
     DocumentForm, ImportForm,
 )
-from .archive import ArchiveFailure, export_documents, import_archive
+from .archive import ArchiveFailure, documents_for_categories, export_documents, import_archive
 from .importers import ImportFailure, import_document
 from .models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
 from .tables import DocumentTable, AssignmentTable, DocumentCategoryTable
@@ -189,7 +189,13 @@ class DocumentArchiveView(View):
             form = ArchiveExportForm(request.POST, user=request.user)
             if not form.is_valid():
                 return self._render(request, export_form=form)
-            stream = export_documents(form.cleaned_data["documents"])
+            documents = documents_for_categories(
+                form.cleaned_data["categories"], form.cleaned_data["include_subfolders"], request.user
+            )
+            if not documents.exists():
+                form.add_error("categories", "Die ausgewählten Ordner enthalten keine exportierbaren Dokumentationen.")
+                return self._render(request, export_form=form)
+            stream = export_documents(documents)
             response = FileResponse(stream, content_type="application/zip")
             response["Content-Disposition"] = 'attachment; filename="netbox-documentation-export.zip"'
             return response

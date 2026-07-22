@@ -3,7 +3,9 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from utilities.forms import get_field_value
-from utilities.forms.fields import ContentTypeChoiceField, DynamicModelChoiceField, SlugField
+from utilities.forms.fields import (
+    ContentTypeChoiceField, DynamicModelChoiceField, DynamicModelMultipleChoiceField, SlugField,
+)
 from utilities.forms.rendering import FieldSet
 from utilities.forms.widgets import HTMXSelect
 from netbox.forms import NetBoxModelForm
@@ -119,17 +121,22 @@ class ImportForm(forms.Form):
 
 
 class ArchiveExportForm(forms.Form):
-    documents = forms.ModelMultipleChoiceField(
-        queryset=Document.objects.none(), widget=forms.CheckboxSelectMultiple,
-        label="Dokumentationen",
+    categories = DynamicModelMultipleChoiceField(
+        queryset=DocumentCategory.objects.all(), selector=True,
+        label="Ordner und Kategorien",
+        help_text="Einen oder mehrere Ordner suchen und hinzufügen.",
+    )
+    include_subfolders = forms.BooleanField(
+        required=False, initial=True, label="Unterordner einbeziehen",
+        help_text="Exportiert Dokumentationen aus allen untergeordneten Ordnern.",
     )
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        queryset = Document.objects.all().order_by("title")
+        queryset = DocumentCategory.objects.all().order_by("name")
         if user is not None:
             queryset = queryset.restrict(user, "view")
-        self.fields["documents"].queryset = queryset
+        self.fields["categories"].queryset = queryset
 
 
 class ArchiveImportForm(forms.Form):

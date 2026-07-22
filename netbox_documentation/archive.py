@@ -20,6 +20,20 @@ class ArchiveFailure(ValueError):
     pass
 
 
+def documents_for_categories(categories, include_subfolders=True, user=None):
+    """Return distinct permitted documents contained in the selected category trees."""
+    category_ids = set(categories.values_list("pk", flat=True))
+    frontier = set(category_ids)
+    while include_subfolders and frontier:
+        children = set(DocumentCategory.objects.filter(parent_id__in=frontier).values_list("pk", flat=True))
+        frontier = children - category_ids
+        category_ids.update(children)
+    documents = Document.objects.filter(category_id__in=category_ids).distinct().order_by("title")
+    if user is not None:
+        documents = documents.restrict(user, "view")
+    return documents
+
+
 def _category_path(category):
     path, seen = [], set()
     while category and category.pk not in seen:

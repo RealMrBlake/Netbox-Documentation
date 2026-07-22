@@ -21,7 +21,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.4.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.4.1` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 
@@ -131,7 +131,7 @@ Nach Aktivierung stehen die üblichen NetBox-Plugin-Endpunkte bereit:
 
 ## ZIP-Archiv
 
-Unter **Dokumentation → ZIP Export & Import** können mehrere Dokumentationen ausgewählt und gemeinsam heruntergeladen werden. Das Archiv enthält:
+Unter **Dokumentation → ZIP Export & Import** können mehrere Ordner über ein Suchfeld hinzugefügt und gemeinsam heruntergeladen werden. Optional werden alle Unterordner rekursiv einbezogen. Dokumentationen, die durch überlappende Ordnerauswahlen mehrfach gefunden werden, landen nur einmal im Archiv. Das Archiv enthält:
 
 - Dokumentinhalt und Metadaten
 - vollständige Ordnerpfade
