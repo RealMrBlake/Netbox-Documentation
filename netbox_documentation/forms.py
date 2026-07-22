@@ -116,3 +116,35 @@ class ImportForm(forms.Form):
         if upload and upload.size > limit * 1024 * 1024:
             self.add_error("file", f"Die Datei ist größer als {limit} MB.")
         return data
+
+
+class ArchiveExportForm(forms.Form):
+    documents = forms.ModelMultipleChoiceField(
+        queryset=Document.objects.none(), widget=forms.CheckboxSelectMultiple,
+        label="Dokumentationen",
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        queryset = Document.objects.all().order_by("title")
+        if user is not None:
+            queryset = queryset.restrict(user, "view")
+        self.fields["documents"].queryset = queryset
+
+
+class ArchiveImportForm(forms.Form):
+    archive = forms.FileField(label="ZIP-Archiv")
+    update_existing = forms.BooleanField(
+        required=False, initial=False,
+        label="Bestehende Dokumentationen mit gleicher Kennung aktualisieren",
+        help_text="Ohne diese Option werden bei Namenskonflikten neue Dokumentationen mit einer fortlaufenden Kennung angelegt.",
+    )
+
+    def clean_archive(self):
+        upload = self.cleaned_data["archive"]
+        if not upload.name.lower().endswith(".zip"):
+            raise forms.ValidationError("Bitte ein vom Plugin erzeugtes ZIP-Archiv auswählen.")
+        limit = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("max_archive_size_mb", 250)
+        if upload.size > limit * 1024 * 1024:
+            raise forms.ValidationError(f"Das Archiv ist größer als {limit} MB.")
+        return upload

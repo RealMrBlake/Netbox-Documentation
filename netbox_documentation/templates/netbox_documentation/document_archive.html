@@ -1,0 +1,37 @@
+{% extends 'base/layout.html' %}
+{% load form_helpers %}
+
+{% block title %}Dokumentationsarchiv{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-xl-6">
+    <div class="card h-100">
+      <h5 class="card-header"><i class="mdi mdi-folder-zip"></i> Dokumentationen exportieren</h5>
+      <div class="card-body">
+        <p>Ausgewählte Dokumentationen gemeinsam mit Ordnern, Objektzuordnungen und Anhängen herunterladen.</p>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="export">
+          {% render_form export_form %}
+          <button type="submit" class="btn btn-primary"><i class="mdi mdi-download"></i> ZIP herunterladen</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-6">
+    <div class="card h-100">
+      <h5 class="card-header"><i class="mdi mdi-folder-upload"></i> Dokumentationen importieren</h5>
+      <div class="card-body">
+        <p>Ein zuvor mit diesem Plugin erzeugtes ZIP-Archiv hochladen. Nicht vorhandene NetBox-Zielobjekte werden sicher übersprungen.</p>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="import">
+          {% render_form import_form %}
+          <button type="submit" class="btn btn-primary"><i class="mdi mdi-upload"></i> ZIP importieren</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

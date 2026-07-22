@@ -7,6 +7,7 @@ urlpatterns = (
     path("", views.DocumentListView.as_view(), name="document_list"),
     path("documents/add/", views.DocumentEditView.as_view(), name="document_add"),
     path("documents/import/", views.DocumentImportView.as_view(), name="document_import"),
+    path("archive/", views.DocumentArchiveView.as_view(), name="document_archive"),
     path("documents/<int:pk>/", views.DocumentView.as_view(), name="document"),
     path("documents/<int:pk>/edit/", views.DocumentEditView.as_view(), name="document_edit"),
     path("documents/<int:pk>/media-upload/", views.DocumentMediaUploadView.as_view(), name="document_media_upload"),

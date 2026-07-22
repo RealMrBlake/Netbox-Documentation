@@ -10,6 +10,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 - Breite Editoransicht und Fokusmodus innerhalb des NetBox-Layouts
 - Bilder direkt vom eigenen Gerät in die Dokumentation hochladen
 - Formatierte Word-Inhalte inklusive Tabellen und unterstützten Zwischenablage-Bildern einfügen
+- Mehrere Dokumentationen mit Ordnern, Zuordnungen und Anhängen als ZIP exportieren und wieder importieren
 - Eine Dokumentation mehreren Objekten zuordnen und umgekehrt
 - Unbegrenzt viele Objektzuordnungen pro Dokumentation; nur identische Doppelzuordnungen werden verhindert
 - Unterstützte Standardobjekte: Region, Standort, Location, Rack, Gerät, VM, VM-Cluster und Mandant/Kunde
@@ -20,7 +21,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.3.4` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.4.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 
@@ -68,6 +69,7 @@ PLUGINS = [
 PLUGINS_CONFIG = {
     "netbox_documentation": {
         "max_import_size_mb": 25,
+        "max_archive_size_mb": 250,
         "keep_imported_file": True,
         "allowed_object_types": [
             "dcim.region",
@@ -126,6 +128,19 @@ Nach Aktivierung stehen die üblichen NetBox-Plugin-Endpunkte bereit:
 - `/api/plugins/documentation/assignments/`
 - `/api/plugins/documentation/folders/`
 - `/api/plugins/documentation/attachments/`
+
+## ZIP-Archiv
+
+Unter **Dokumentation → ZIP Export & Import** können mehrere Dokumentationen ausgewählt und gemeinsam heruntergeladen werden. Das Archiv enthält:
+
+- Dokumentinhalt und Metadaten
+- vollständige Ordnerpfade
+- Zuordnungen zu NetBox-Objekten
+- importierte Dateien und Editor-Bilder
+
+Beim Import kann gewählt werden, ob Dokumentationen mit derselben Kennung aktualisiert oder als neue Kopie angelegt werden. Zuordnungen zu nicht vorhandenen beziehungsweise nicht erlaubten NetBox-Objekten werden übersprungen. Eingebettete Bild-URLs werden auf die neu gespeicherten Anhänge umgeschrieben.
+
+Archive werden vor dem Import auf sichere Pfade, Dateianzahl, Dateitypen, Kompressionsverhältnis und entpackte Gesamtgröße geprüft. Das Größenlimit wird mit `max_archive_size_mb` in `PLUGINS_CONFIG` festgelegt.
 
 ## Entwicklung und Tests
 

@@ -4,6 +4,7 @@ import tinymce
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,7 +12,11 @@ from django.utils.text import slugify
 from django.views import View
 from netbox.views import generic
 from .filtersets import DocumentFilterSet, AssignmentFilterSet, DocumentCategoryFilterSet
-from .forms import DocumentForm, AssignmentForm, ImportForm, DocumentCategoryForm
+from .forms import (
+    ArchiveExportForm, ArchiveImportForm, AssignmentForm, DocumentCategoryForm,
+    DocumentForm, ImportForm,
+)
+from .archive import ArchiveFailure, export_documents, import_archive
 from .importers import ImportFailure, import_document
 from .models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
 from .tables import DocumentTable, AssignmentTable, DocumentCategoryTable
@@ -160,3 +165,57 @@ class DocumentMediaUploadView(PermissionRequiredMixin, View):
             content_type=upload.content_type or "", size=upload.size,
         )
         return JsonResponse({"location": attachment.file.url})
+
+
+class DocumentArchiveView(View):
+    template_name = "netbox_documentation/document_archive.html"
+
+    def _render(self, request, export_form=None, import_form=None):
+        return render(request, self.template_name, {
+            "export_form": export_form or ArchiveExportForm(user=request.user),
+            "import_form": import_form or ArchiveImportForm(),
+        })
+
+    def get(self, request):
+        if not request.user.has_perm("netbox_documentation.view_document"):
+            raise PermissionDenied
+        return self._render(request)
+
+    def post(self, request):
+        action = request.POST.get("action")
+        if action == "export":
+            if not request.user.has_perm("netbox_documentation.view_document"):
+                raise PermissionDenied
+            form = ArchiveExportForm(request.POST, user=request.user)
+            if not form.is_valid():
+                return self._render(request, export_form=form)
+            stream = export_documents(form.cleaned_data["documents"])
+            response = FileResponse(stream, content_type="application/zip")
+            response["Content-Disposition"] = 'attachment; filename="netbox-documentation-export.zip"'
+            return response
+        if action == "import":
+            required = (
+                "netbox_documentation.import_document",
+                "netbox_documentation.add_document",
+                "netbox_documentation.change_document",
+                "netbox_documentation.add_documentassignment",
+                "netbox_documentation.add_documentattachment",
+                "netbox_documentation.add_documentcategory",
+            )
+            if not all(request.user.has_perm(permission) for permission in required):
+                raise PermissionDenied
+            form = ArchiveImportForm(request.POST, request.FILES)
+            if not form.is_valid():
+                return self._render(request, import_form=form)
+            try:
+                result = import_archive(form.cleaned_data["archive"], form.cleaned_data["update_existing"])
+            except ArchiveFailure as exc:
+                form.add_error("archive", str(exc))
+                return self._render(request, import_form=form)
+            messages.success(request, (
+                f"Archiv importiert: {result['created']} erstellt, {result['updated']} aktualisiert."
+            ))
+            if result["skipped_assignments"]:
+                messages.warning(request, f"{result['skipped_assignments']} nicht verfügbare Objektzuordnungen wurden übersprungen.")
+            return redirect("plugins:netbox_documentation:document_list")
+        return self._render(request)
