@@ -52,7 +52,10 @@ class Document(NetBoxModel):
         css = CSSSanitizer(allowed_css_properties={
             "background-color", "border", "border-color", "border-style", "border-width",
             "color", "font-family", "font-size", "font-style", "font-weight", "height",
-            "margin-left", "text-align", "text-decoration", "vertical-align", "width",
+            "border-collapse", "line-height", "list-style-type", "margin", "margin-bottom",
+            "margin-left", "margin-right", "margin-top", "padding", "padding-bottom",
+            "padding-left", "padding-right", "padding-top", "text-align", "text-decoration",
+            "text-indent", "vertical-align", "white-space", "width",
         })
         return bleach.clean(value, tags=tags, attributes=attributes, protocols=("http", "https", "mailto"), css_sanitizer=css)
 
