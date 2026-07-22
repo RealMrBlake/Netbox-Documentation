@@ -135,3 +135,9 @@ class DocumentAttachment(NetBoxModel):
 
     def __str__(self):
         return self.original_name
+
+    def get_absolute_url(self):
+        # Attachments are displayed on their parent document and intentionally
+        # have no standalone detail view. This is also used by NetBox's delete
+        # dependency collector when rendering the confirmation dialog.
+        return self.document.get_absolute_url()
