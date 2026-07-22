@@ -2,6 +2,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
+from django.utils.html import format_html
 from utilities.forms import get_field_value
 from utilities.forms.fields import (
     ContentTypeChoiceField, DynamicModelChoiceField, DynamicModelMultipleChoiceField, SlugField,
@@ -11,6 +12,14 @@ from utilities.forms.widgets import HTMXSelect
 from netbox.forms import NetBoxModelForm
 from dcim.models import Device
 from .models import Document, DocumentAssignment, DocumentCategory
+
+
+def help_label(label, description):
+    return format_html(
+        '{} <span class="mdi mdi-help-circle-outline text-muted" title="{}" '
+        'data-bs-toggle="tooltip" aria-label="{}"></span>',
+        label, description, description,
+    )
 
 
 def allowed_content_types():
@@ -105,17 +114,32 @@ class DocumentCategoryForm(NetBoxModelForm):
 
 class ImportForm(forms.Form):
     file = forms.FileField(label="Word-, Excel- oder PDF-Datei")
-    title = forms.CharField(max_length=200, required=False, help_text="Leer lassen, um den Dateinamen zu verwenden")
-    append = forms.BooleanField(required=False, initial=False, label="An bestehende Dokumentation anhängen")
-    document = forms.ModelChoiceField(queryset=Document.objects.all(), required=False, label="Bestehende Dokumentation")
+    title = forms.CharField(max_length=200, required=False, label=help_label(
+        "Titel", "Leer lassen, um den Dateinamen als Titel zu verwenden. Beim Mehrblattimport werden die Blattnamen verwendet."
+    ))
+    append = forms.BooleanField(required=False, initial=False, label=help_label(
+        "An bestehende Dokumentation anhängen", "Fügt den importierten Inhalt am Ende einer vorhandenen Dokumentation an."
+    ))
+    document = forms.ModelChoiceField(queryset=Document.objects.all(), required=False, label=help_label(
+        "Bestehende Dokumentation", "Zieldokumentation für die Funktion Anhängen."
+    ))
     excel_sheets_as_documents = forms.BooleanField(
         required=False,
-        label="Excel mit mehreren Arbeitsblättern – je Blatt eine Dokumentation",
+        label=help_label(
+            "Excel mit mehreren Arbeitsblättern – je Blatt eine Dokumentation",
+            "Erstellt aus jedem nicht leeren Excel-Arbeitsblatt eine eigene Dokumentation im gewählten Zielordner.",
+        ),
+    )
+    flatten_excel_tables = forms.BooleanField(
+        required=False,
+        label=help_label(
+            "Excel-Tabellen glätten",
+            "Wandelt jede Tabellenzeile in einen lesbaren Textblock aus Feldnamen und Wert um, statt eine Tabelle zu erzeugen.",
+        ),
     )
     category = DynamicModelChoiceField(
         queryset=DocumentCategory.objects.all(), required=False,
-        label="Zielordner / Kategorie",
-        help_text="Für den Mehrblattimport verpflichtend.",
+        label=help_label("Zielordner / Kategorie", "Für den Excel-Mehrblattimport verpflichtend."),
     )
 
     def __init__(self, *args, user=None, **kwargs):

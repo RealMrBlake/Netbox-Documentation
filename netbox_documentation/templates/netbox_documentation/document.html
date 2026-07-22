@@ -1,5 +1,28 @@
 {% extends 'generic/object.html' %}
 {% load helpers %}
+{% block head %}
+  {{ block.super }}
+  <style>
+    .documentation-content { overflow-x: auto; }
+    .documentation-content table {
+      width: auto !important;
+      max-width: 100%;
+      table-layout: auto;
+      font-size: .875rem;
+      line-height: 1.25;
+    }
+    .documentation-content th,
+    .documentation-content td {
+      min-width: 3rem;
+      max-width: 22rem;
+      padding: .25rem .4rem !important;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      vertical-align: top;
+    }
+    .documentation-content p { max-width: 90rem; }
+  </style>
+{% endblock head %}
 {% block extra_controls %}
   <a href="{% url 'plugins:netbox_documentation:document_print' pk=object.pk %}" target="_blank" class="btn btn-outline-secondary">
     <i class="mdi mdi-printer"></i> Drucken / PDF
@@ -9,7 +32,7 @@
 <div class="row">
   <div class="col col-md-9">
     {% if object.summary %}<p class="lead">{{ object.summary }}</p>{% endif %}
-    <div class="card"><div class="card-body rendered-markdown">{{ object.rendered_body|safe }}</div></div>
+    <div class="card"><div class="card-body rendered-markdown documentation-content">{{ object.rendered_body|safe }}</div></div>
   </div>
   <div class="col col-md-3">
     {% if object.category %}<div class="card mb-3"><h5 class="card-header">Ordner</h5><a class="list-group-item list-group-item-action" href="{{ object.category.get_absolute_url }}"><i class="mdi mdi-folder"></i> {{ object.category }}</a></div>{% endif %}

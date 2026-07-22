@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
 from django.views import View
 from netbox.views import generic
+from netbox.object_actions import AddObject, BulkDelete, BulkImport
 from .filtersets import DocumentFilterSet, AssignmentFilterSet, DocumentCategoryFilterSet
 from .forms import (
     ArchiveExportForm, ArchiveImportForm, AssignmentForm, DocumentCategoryForm,
@@ -41,6 +42,7 @@ class DocumentListView(generic.ObjectListView):
     queryset = Document.objects.prefetch_related("assignments")
     table = DocumentTable
     filterset = DocumentFilterSet
+    actions = (AddObject, BulkImport, BulkDelete)
 
 
 class DocumentView(generic.ObjectView):
@@ -67,6 +69,12 @@ class DocumentEditView(generic.ObjectEditView):
 
 class DocumentDeleteView(generic.ObjectDeleteView):
     queryset = Document.objects.all()
+
+
+class DocumentBulkDeleteView(generic.BulkDeleteView):
+    queryset = Document.objects.all()
+    table = DocumentTable
+    filterset = DocumentFilterSet
 
 
 class DocumentCategoryListView(generic.ObjectListView):
@@ -118,7 +126,7 @@ class DocumentImportView(PermissionRequiredMixin, View):
         if form.cleaned_data.get("excel_sheets_as_documents"):
             return self._import_excel_sheets(request, form, upload)
         try:
-            result = import_document(upload)
+            result = import_document(upload, flatten_excel=form.cleaned_data.get("flatten_excel_tables", False))
         except (ImportFailure, Exception) as exc:
             # Known conversion/library errors are presented without exposing a traceback.
             form.add_error("file", f"Import fehlgeschlagen: {exc}")
@@ -155,12 +163,15 @@ class DocumentImportView(PermissionRequiredMixin, View):
     def _import_excel_sheets(self, request, form, upload):
         from django.core.files.base import ContentFile
         try:
-            sheets = import_excel_sheets(upload)
+            sheets = import_excel_sheets(upload, flatten=form.cleaned_data.get("flatten_excel_tables", False))
         except (ImportFailure, Exception) as exc:
             form.add_error("file", f"Excel-Mehrblattimport fehlgeschlagen: {exc}")
             return render(request, self.template_name, {"form": form})
         category = form.cleaned_data["category"]
         created_documents = []
+        upload.seek(0)
+        original_content = upload.read()
+        upload.seek(0)
         with transaction.atomic():
             for sheet in sheets:
                 base_slug = slugify(sheet.title)[:180] or "arbeitsblatt"
@@ -188,12 +199,14 @@ class DocumentImportView(PermissionRequiredMixin, View):
                     document.save(update_fields=("body", "last_updated"))
                 created_documents.append(document)
             keep = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("keep_imported_file", True)
-            if keep and created_documents:
-                upload.seek(0)
-                DocumentAttachment.objects.create(
-                    document=created_documents[0], file=upload, original_name=upload.name,
-                    content_type=upload.content_type or "", size=upload.size,
-                )
+            if keep:
+                for document in created_documents:
+                    attachment = DocumentAttachment(
+                        document=document, original_name=upload.name,
+                        content_type=upload.content_type or "", size=len(original_content),
+                    )
+                    attachment.file.save(upload.name, ContentFile(original_content), save=False)
+                    attachment.save()
         image_count = sum(len(sheet.images) for sheet in sheets)
         messages.success(request, (
             f"{len(created_documents)} Arbeitsblätter als Dokumentationen in „{category}“ importiert; "

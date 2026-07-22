@@ -29,14 +29,14 @@ class ExcelSheetResult:
     images: list[ImportedImage] = field(default_factory=list)
 
 
-def import_document(upload) -> ImportResult:
+def import_document(upload, flatten_excel=False) -> ImportResult:
     suffix = Path(upload.name).suffix.lower()
     content = upload.read()
     upload.seek(0)
     if suffix == ".docx":
         return _docx(content)
     if suffix in {".xlsx", ".xlsm"}:
-        return _xlsx(content)
+        return _xlsx(content, flatten=flatten_excel)
     if suffix == ".pdf":
         return _pdf(content)
     if suffix in {".md", ".txt"}:
@@ -53,9 +53,28 @@ def _docx(content):
     return ImportResult(result.value.strip(), warnings)
 
 
-def _xlsx(content):
-    from openpyxl import load_workbook
+def _render_excel_rows(rows, flatten=False):
     from tabulate import tabulate
+    width = max(len(row) for row in rows)
+    rows = [row + [""] * (width - len(row)) for row in rows]
+    header, body = rows[0], rows[1:]
+    if not flatten:
+        return tabulate(body, headers=header, tablefmt="github")
+    blocks = []
+    for number, row in enumerate(body, 1):
+        values = []
+        for column, value in zip(header, row):
+            if value == "":
+                continue
+            label = column or "Feld"
+            values.append(f"**{label}:** {value}")
+        if values:
+            blocks.append(f"### Datensatz {number}\n\n" + "  \n".join(values))
+    return "\n\n".join(blocks) or "_Keine Datensätze_"
+
+
+def _xlsx(content, flatten=False):
+    from openpyxl import load_workbook
     workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
     sections = []
     for sheet in workbook.worksheets:
@@ -64,20 +83,16 @@ def _xlsx(content):
             rows.pop()
         if not rows:
             continue
-        width = max(len(row) for row in rows)
-        rows = [row + [""] * (width - len(row)) for row in rows]
-        header, body = rows[0], rows[1:]
-        sections.append(f"## {sheet.title}\n\n{tabulate(body, headers=header, tablefmt='github')}")
+        sections.append(f"## {sheet.title}\n\n{_render_excel_rows(rows, flatten)}")
     if not sections:
         raise ImportFailure("Die Arbeitsmappe enthält keine Daten.")
     return ImportResult("\n\n".join(sections))
 
 
-def import_excel_sheets(upload) -> list[ExcelSheetResult]:
+def import_excel_sheets(upload, flatten=False) -> list[ExcelSheetResult]:
     """Convert each non-empty worksheet into an individual document payload."""
     from openpyxl import load_workbook
     from openpyxl.utils import get_column_letter
-    from tabulate import tabulate
 
     suffix = Path(upload.name).suffix.lower()
     if suffix not in {".xlsx", ".xlsm"}:
@@ -111,9 +126,7 @@ def import_excel_sheets(upload) -> list[ExcelSheetResult]:
         if not rows and not images:
             continue
         if rows:
-            width = max(len(row) for row in rows)
-            rows = [row + [""] * (width - len(row)) for row in rows]
-            markdown = tabulate(rows[1:], headers=rows[0], tablefmt="github")
+            markdown = _render_excel_rows(rows, flatten)
         else:
             markdown = ""
         results.append(ExcelSheetResult(title=sheet.title, markdown=markdown, images=images))
