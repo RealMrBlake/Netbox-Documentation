@@ -1,8 +1,9 @@
 {% extends 'generic/object_edit.html' %}
+{% load static %}
 
 {% block javascript %}
   {{ block.super }}
-  <script src="{{ config.editor_script_url }}" referrerpolicy="origin"></script>
+  <script src="{% static 'tinymce/tinymce.min.js' %}"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof tinymce === 'undefined') {

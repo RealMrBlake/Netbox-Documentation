@@ -5,10 +5,11 @@ class DocumentationConfig(PluginConfig):
     name = "netbox_documentation"
     verbose_name = "Dokumentation"
     description = "Wiki und Office-Dokumentation direkt in NetBox"
-    version = "0.2.0"
+    version = "0.2.1"
     author = "NetBox Documentation Contributors"
     base_url = "documentation"
     min_version = "4.0.0"
+    django_apps = ["tinymce"]
     default_settings = {
         "allowed_object_types": [
             "dcim.region", "dcim.site", "dcim.location", "dcim.rack",
@@ -17,8 +18,6 @@ class DocumentationConfig(PluginConfig):
         ],
         "max_import_size_mb": 25,
         "keep_imported_file": True,
-        # Can be replaced with a locally hosted TinyMCE bundle for offline use.
-        "editor_script_url": "https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js",
     }
 
 
