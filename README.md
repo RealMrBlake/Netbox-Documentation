@@ -12,6 +12,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 - Formatierte Word-Inhalte inklusive Tabellen und unterstützten Zwischenablage-Bildern einfügen
 - Mehrere Dokumentationen mit Ordnern, Zuordnungen und Anhängen als ZIP exportieren und wieder importieren
 - Druckoptimierte A4-Ansicht zum Drucken oder Speichern als PDF
+- Excel-Mehrblattimport: je Arbeitsblatt eine Dokumentation in einem gewählten Zielordner
 - Eine Dokumentation mehreren Objekten zuordnen und umgekehrt
 - Unbegrenzt viele Objektzuordnungen pro Dokumentation; nur identische Doppelzuordnungen werden verhindert
 - Unterstützte Standardobjekte: Region, Standort, Location, Rack, Gerät, VM, VM-Cluster und Mandant/Kunde
@@ -22,7 +23,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.4.2` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.5.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 
@@ -120,6 +121,8 @@ Objektbezogene NetBox-Constraints sollten zusätzlich passend zu Mandanten und V
 | MD/TXT | Direkte Übernahme (UTF-8) |
 
 Alte binäre `.doc`- und `.xls`-Dateien müssen vorher in `.docx` bzw. `.xlsx` konvertiert werden. Gescannte PDFs benötigen OCR, die in dieser Version bewusst noch nicht enthalten ist. Komplexe Word-/PDF-Layouts, eingebettete Bilder und Excel-Formatierungen können nicht verlustfrei nach Markdown übertragen werden.
+
+Für große Excel-Dateien kann auf der Importseite **„Excel mit mehreren Arbeitsblättern – je Blatt eine Dokumentation“** aktiviert werden. Dazu ist ein Zielordner verpflichtend. Jedes nicht leere Arbeitsblatt wird als eigene Dokumentation mit dem Blattnamen als Titel angelegt. Normale eingebettete PNG-, JPEG-, GIF- und WebP-Bilder werden dem jeweiligen Dokument als Medienanhang hinzugefügt. Diagramme, SmartArt, Steuerelemente und extern verknüpfte Bilder können nicht zuverlässig übernommen werden.
 
 ## REST-API
 

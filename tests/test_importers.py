@@ -15,6 +15,7 @@ sys.modules[spec.name] = importers
 spec.loader.exec_module(importers)
 ImportFailure = importers.ImportFailure
 import_document = importers.import_document
+import_excel_sheets = importers.import_excel_sheets
 
 
 class Upload(BytesIO):
@@ -44,3 +45,23 @@ def test_xlsx_imports_sheets_as_tables():
 def test_rejects_legacy_excel():
     with pytest.raises(ImportFailure, match="xlsx"):
         import_document(Upload(b"", "legacy.xls"))
+
+
+def test_excel_multi_sheet_import_creates_one_result_per_sheet():
+    workbook = Workbook()
+    first = workbook.active
+    first.title = "Server"
+    first.append(["Name", "IP"])
+    first.append(["web01", "10.0.0.1"])
+    second = workbook.create_sheet("Kontakte")
+    second.append(["Name", "Telefon"])
+    second.append(["Leitstelle", "1234"])
+    workbook.create_sheet("Leer")
+    stream = BytesIO()
+    workbook.save(stream)
+
+    results = import_excel_sheets(Upload(stream.getvalue(), "kunde.xlsx"))
+
+    assert [result.title for result in results] == ["Server", "Kontakte"]
+    assert "web01" in results[0].markdown
+    assert "Leitstelle" in results[1].markdown

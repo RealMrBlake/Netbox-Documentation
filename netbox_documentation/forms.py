@@ -108,12 +108,34 @@ class ImportForm(forms.Form):
     title = forms.CharField(max_length=200, required=False, help_text="Leer lassen, um den Dateinamen zu verwenden")
     append = forms.BooleanField(required=False, initial=False, label="An bestehende Dokumentation anhängen")
     document = forms.ModelChoiceField(queryset=Document.objects.all(), required=False, label="Bestehende Dokumentation")
+    excel_sheets_as_documents = forms.BooleanField(
+        required=False,
+        label="Excel mit mehreren Arbeitsblättern – je Blatt eine Dokumentation",
+    )
+    category = DynamicModelChoiceField(
+        queryset=DocumentCategory.objects.all(), required=False,
+        label="Zielordner / Kategorie",
+        help_text="Für den Mehrblattimport verpflichtend.",
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            self.fields["document"].queryset = Document.objects.restrict(user, "change")
+            self.fields["category"].queryset = DocumentCategory.objects.restrict(user, "view")
 
     def clean(self):
         data = super().clean()
         if data.get("append") and not data.get("document"):
             self.add_error("document", "Zum Anhängen muss eine Dokumentation gewählt werden.")
         upload = data.get("file")
+        if data.get("excel_sheets_as_documents"):
+            if upload and not upload.name.lower().endswith((".xlsx", ".xlsm")):
+                self.add_error("file", "Der Mehrblattimport benötigt eine XLSX- oder XLSM-Datei.")
+            if not data.get("category"):
+                self.add_error("category", "Bitte einen Zielordner für die erzeugten Dokumentationen auswählen.")
+            if data.get("append"):
+                self.add_error("append", "Mehrblattimport und Anhängen können nicht kombiniert werden.")
         limit = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("max_import_size_mb", 25)
         if upload and upload.size > limit * 1024 * 1024:
             self.add_error("file", f"Die Datei ist größer als {limit} MB.")

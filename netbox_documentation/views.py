@@ -17,7 +17,7 @@ from .forms import (
     DocumentForm, ImportForm,
 )
 from .archive import ArchiveFailure, documents_for_categories, export_documents, import_archive
-from .importers import ImportFailure, import_document
+from .importers import ImportFailure, import_document, import_excel_sheets
 from .models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
 from .tables import DocumentTable, AssignmentTable, DocumentCategoryTable
 
@@ -108,13 +108,15 @@ class DocumentImportView(PermissionRequiredMixin, View):
     template_name = "netbox_documentation/document_import.html"
 
     def get(self, request):
-        return render(request, self.template_name, {"form": ImportForm()})
+        return render(request, self.template_name, {"form": ImportForm(user=request.user)})
 
     def post(self, request):
-        form = ImportForm(request.POST, request.FILES)
+        form = ImportForm(request.POST, request.FILES, user=request.user)
         if not form.is_valid():
             return render(request, self.template_name, {"form": form})
         upload = form.cleaned_data["file"]
+        if form.cleaned_data.get("excel_sheets_as_documents"):
+            return self._import_excel_sheets(request, form, upload)
         try:
             result = import_document(upload)
         except (ImportFailure, Exception) as exc:
@@ -149,6 +151,55 @@ class DocumentImportView(PermissionRequiredMixin, View):
             messages.warning(request, warning)
         messages.success(request, f"{upload.name} wurde importiert.")
         return redirect(document)
+
+    def _import_excel_sheets(self, request, form, upload):
+        from django.core.files.base import ContentFile
+        try:
+            sheets = import_excel_sheets(upload)
+        except (ImportFailure, Exception) as exc:
+            form.add_error("file", f"Excel-Mehrblattimport fehlgeschlagen: {exc}")
+            return render(request, self.template_name, {"form": form})
+        category = form.cleaned_data["category"]
+        created_documents = []
+        with transaction.atomic():
+            for sheet in sheets:
+                base_slug = slugify(sheet.title)[:180] or "arbeitsblatt"
+                document_slug, counter = base_slug, 2
+                while Document.objects.filter(slug=document_slug).exists():
+                    document_slug = f"{base_slug[:190-len(str(counter))]}-{counter}"
+                    counter += 1
+                document = Document.objects.create(
+                    title=sheet.title[:200], slug=document_slug, body=sheet.markdown,
+                    body_format="markdown", category=category,
+                    summary=f"Importiert aus {upload.name}",
+                )
+                if sheet.images:
+                    image_lines = []
+                    for image in sheet.images:
+                        attachment = DocumentAttachment(
+                            document=document, original_name=image.name,
+                            content_type=image.content_type, size=len(image.content),
+                        )
+                        attachment.file.save(image.name, ContentFile(image.content), save=False)
+                        attachment.save()
+                        location = f" ({image.cell})" if image.cell else ""
+                        image_lines.append(f"![{image.name}{location}]({attachment.file.url})")
+                    document.body += "\n\n## Bilder\n\n" + "\n\n".join(image_lines)
+                    document.save(update_fields=("body", "last_updated"))
+                created_documents.append(document)
+            keep = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("keep_imported_file", True)
+            if keep and created_documents:
+                upload.seek(0)
+                DocumentAttachment.objects.create(
+                    document=created_documents[0], file=upload, original_name=upload.name,
+                    content_type=upload.content_type or "", size=upload.size,
+                )
+        image_count = sum(len(sheet.images) for sheet in sheets)
+        messages.success(request, (
+            f"{len(created_documents)} Arbeitsblätter als Dokumentationen in „{category}“ importiert; "
+            f"{image_count} Bilder übernommen."
+        ))
+        return redirect("plugins:netbox_documentation:document_list")
 
 
 class DocumentMediaUploadView(PermissionRequiredMixin, View):
