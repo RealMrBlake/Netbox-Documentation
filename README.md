@@ -18,12 +18,47 @@ Die Version `0.1.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven
 
 ## Installation
 
-Im Python-Virtualenv der NetBox-Installation:
+### Installation aus dem Git-Repository
+
+Das Plugin kann direkt aus dem Git-Repository installiert werden. Zuerst das Repository auf dem NetBox-Server klonen:
+
+```bash
+cd /opt/netbox
+sudo git clone https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git
+sudo chown -R netbox:netbox /opt/netbox/Netbox-DokiWiki
+```
+
+Anschließend das Plugin im Python-Virtualenv von NetBox installieren:
 
 ```bash
 source /opt/netbox/venv/bin/activate
-pip install /pfad/zu/Netbox-DokiWiki
+pip install /opt/netbox/Netbox-DokiWiki
 ```
+
+### In `local_requirements.txt` eintragen
+
+Damit das Plugin bei NetBox-Updates und einer erneuten Installation der Python-Abhängigkeiten automatisch installiert wird, folgende Zeile in `/opt/netbox/local_requirements.txt` eintragen:
+
+```text
+git+https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git@main
+```
+
+Falls die Datei noch nicht existiert, kann sie erstellt werden:
+
+```bash
+echo 'git+https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git@main' | sudo tee -a /opt/netbox/local_requirements.txt
+```
+
+Danach die lokalen Abhängigkeiten installieren:
+
+```bash
+source /opt/netbox/venv/bin/activate
+pip install -r /opt/netbox/local_requirements.txt
+```
+
+Bei einem privaten Repository muss der NetBox-Server Zugriff auf das Repository besitzen. Zugangsdaten sollten nicht direkt in `local_requirements.txt` gespeichert werden; stattdessen sollte ein geeigneter Git-Credential-Helper oder ein nur lesbarer Deployment-Zugang verwendet werden.
+
+### NetBox konfigurieren
 
 In `configuration.py`:
 
@@ -50,7 +85,7 @@ PLUGINS_CONFIG = {
 }
 ```
 
-Danach:
+Danach die Migrationen und statischen Dateien aktualisieren und NetBox neu starten:
 
 ```bash
 cd /opt/netbox/netbox
@@ -106,4 +141,3 @@ Für vollständige UI-/API-Tests muss NetBox im selben Virtualenv verfügbar sei
 - echte Dokumentrevisionen mit Vergleich und Freigabeprozess
 - asynchroner Massenimport großer Excel-Bestände über NetBox-RQ
 - Vorlagen und automatisch vererbte Dokumentation entlang Region → Standort → Gerät
-
