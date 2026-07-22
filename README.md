@@ -10,6 +10,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 - Breite Editoransicht und Fokusmodus innerhalb des NetBox-Layouts
 - Bilder direkt vom eigenen Gerät in die Dokumentation hochladen
 - Eine Dokumentation mehreren Objekten zuordnen und umgekehrt
+- Unbegrenzt viele Objektzuordnungen pro Dokumentation; nur identische Doppelzuordnungen werden verhindert
 - Unterstützte Standardobjekte: Region, Standort, Location, Rack, Gerät, VM, VM-Cluster und Mandant/Kunde
 - DOCX, XLSX/XLSM, textbasierte PDF-, Markdown- und Textdateien importieren
 - Originaldatei optional zusammen mit der Dokumentation aufbewahren
@@ -18,7 +19,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.3.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.3.1` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 

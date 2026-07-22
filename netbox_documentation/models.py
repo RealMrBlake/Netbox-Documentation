@@ -110,6 +110,11 @@ class DocumentAssignment(NetBoxModel):
     def __str__(self):
         return f"{self.document} → {self.assigned_object}"
 
+    def get_absolute_url(self):
+        # No separate detail page exists for an assignment. NetBox's generic
+        # edit view nevertheless needs a valid URL for its success message.
+        return reverse("plugins:netbox_documentation:documentassignment_list")
+
 
 def attachment_upload_path(instance, filename):
     return f"netbox_documentation/{instance.document_id}/{filename}"
