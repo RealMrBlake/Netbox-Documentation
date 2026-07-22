@@ -3,10 +3,10 @@ from netbox.plugins import PluginConfig
 
 class DocumentationConfig(PluginConfig):
     name = "netbox_documentation"
-    verbose_name = "Dokumentation"
+    verbose_name = "NetBox Dokumentation"
     description = "Wiki und Office-Dokumentation direkt in NetBox"
     version = "0.3.4"
-    author = "NetBox Documentation Contributors"
+    author = "LKE"
     base_url = "documentation"
     min_version = "4.0.0"
     django_apps = ["tinymce"]
