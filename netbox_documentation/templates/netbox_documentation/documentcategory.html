@@ -1,0 +1,26 @@
+{% extends 'generic/object.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col col-md-4">
+    <div class="card">
+      <h5 class="card-header">Unterordner</h5>
+      <div class="list-group list-group-flush">
+        {% for child in object.children.all %}
+          <a class="list-group-item list-group-item-action" href="{{ child.get_absolute_url }}"><i class="mdi mdi-folder"></i> {{ child.name }}</a>
+        {% empty %}<div class="list-group-item text-muted">Keine Unterordner</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col col-md-8">
+    <div class="card">
+      <h5 class="card-header">Dokumentationen</h5>
+      <div class="list-group list-group-flush">
+        {% for document in object.documents.all %}
+          <a class="list-group-item list-group-item-action" href="{{ document.get_absolute_url }}"><strong>{{ document.title }}</strong>{% if document.summary %}<br><small>{{ document.summary }}</small>{% endif %}</a>
+        {% empty %}<div class="list-group-item text-muted">Keine Dokumentationen in diesem Ordner</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

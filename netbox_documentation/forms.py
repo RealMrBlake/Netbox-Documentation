@@ -2,9 +2,13 @@ from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from utilities.forms.fields import SlugField
+from utilities.forms import get_field_value
+from utilities.forms.fields import ContentTypeChoiceField, DynamicModelChoiceField, SlugField
+from utilities.forms.rendering import FieldSet
+from utilities.forms.widgets import HTMXSelect
 from netbox.forms import NetBoxModelForm
-from .models import Document, DocumentAssignment
+from dcim.models import Device
+from .models import Document, DocumentAssignment, DocumentCategory
 
 
 def allowed_content_types():
@@ -24,10 +28,16 @@ class DocumentForm(NetBoxModelForm):
         "rows": 32, "class": "rich-text-editor", "data-rich-text-editor": "true"
     }), help_text="Formatierter Text mit Tabellen, Farben, Schriftarten und Größen.")
     body_format = forms.CharField(widget=forms.HiddenInput(), initial="html")
+    category = DynamicModelChoiceField(queryset=DocumentCategory.objects.all(), required=False, label="Ordner")
+
+    fieldsets = (
+        FieldSet("title", "slug", "category", "summary", "is_published", "tags", name="Dokumentation"),
+        FieldSet("body", "body_format", name="Inhalt"),
+    )
 
     class Meta:
         model = Document
-        fields = ("title", "slug", "summary", "body", "body_format", "is_published", "tags")
+        fields = ("title", "slug", "category", "summary", "body", "body_format", "is_published", "tags")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -40,33 +50,55 @@ class DocumentForm(NetBoxModelForm):
 
 
 class AssignmentForm(NetBoxModelForm):
-    assigned_object_type = forms.ModelChoiceField(queryset=ContentType.objects.none(), label="Objekttyp")
-    assigned_object_id = forms.TypedChoiceField(coerce=int, label="NetBox-Objekt")
+    assigned_object_type = ContentTypeChoiceField(queryset=ContentType.objects.none(), label="Objekttyp", widget=HTMXSelect())
+    assigned_object = DynamicModelChoiceField(
+        queryset=Device.objects.none(), label="NetBox-Objekt", required=True, disabled=True, selector=True
+    )
+
+    fieldsets = (FieldSet("document", "assigned_object_type", "assigned_object", "note", "tags", name="Dokumentation zuordnen"),)
 
     class Meta:
         model = DocumentAssignment
-        fields = ("document", "assigned_object_type", "assigned_object_id", "note", "tags")
+        fields = ("document", "assigned_object_type", "note", "tags")
+
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.get("instance")
+        initial = kwargs.setdefault("initial", {})
+        if instance and instance.pk and instance.assigned_object:
+            initial["assigned_object"] = instance.assigned_object
+        super().__init__(*args, **kwargs)
+        self.fields["assigned_object_type"].queryset = allowed_content_types()
+        ct_id = get_field_value(self, "assigned_object_type")
+        if ct_id:
+            content_type = self.fields["assigned_object_type"].queryset.filter(pk=ct_id).first()
+        else:
+            content_type = None
+        if content_type and content_type.model_class():
+            model = content_type.model_class()
+            self.fields["assigned_object"].queryset = model.objects.all()
+            self.fields["assigned_object"].widget.attrs["selector"] = model._meta.label_lower
+            self.fields["assigned_object"].disabled = False
+            self.fields["assigned_object"].label = model._meta.verbose_name.title()
+
+    def clean(self):
+        super().clean()
+        self.instance.assigned_object = self.cleaned_data.get("assigned_object")
+
+
+class DocumentCategoryForm(NetBoxModelForm):
+    slug = SlugField(slug_source="name")
+    parent = DynamicModelChoiceField(queryset=DocumentCategory.objects.all(), required=False, label="Übergeordneter Ordner")
+
+    fieldsets = (FieldSet("name", "slug", "parent", "description", "tags", name="Ordner"),)
+
+    class Meta:
+        model = DocumentCategory
+        fields = ("name", "slug", "parent", "description", "tags")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["assigned_object_type"].queryset = allowed_content_types()
-        content_type = None
-        ct_id = (self.data.get("assigned_object_type") or self.initial.get("assigned_object_type")
-                 or getattr(self.instance, "assigned_object_type_id", None))
-        if ct_id:
-            content_type = ContentType.objects.filter(pk=ct_id).first()
-        if content_type:
-            model = content_type.model_class()
-            objects = model.objects.all().order_by("pk")
-            self.fields["assigned_object_id"].choices = [(obj.pk, str(obj)) for obj in objects]
-
-    def clean(self):
-        cleaned = super().clean()
-        object_id = cleaned.get("assigned_object_id")
-        ct = cleaned.get("assigned_object_type")
-        if object_id and ct and not ct.model_class().objects.filter(pk=object_id).exists():
-            self.add_error("assigned_object_id", "Das Objekt existiert für diesen Objekttyp nicht.")
-        return cleaned
+        if self.instance.pk:
+            self.fields["parent"].queryset = DocumentCategory.objects.exclude(pk=self.instance.pk)
 
 
 class ImportForm(forms.Form):

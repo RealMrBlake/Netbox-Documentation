@@ -1,7 +1,7 @@
 from netbox.api.viewsets import NetBoxModelViewSet
-from ..filtersets import DocumentFilterSet, AssignmentFilterSet
-from ..models import Document, DocumentAssignment
-from .serializers import DocumentSerializer, DocumentAssignmentSerializer
+from ..filtersets import DocumentFilterSet, AssignmentFilterSet, DocumentCategoryFilterSet
+from ..models import Document, DocumentAssignment, DocumentCategory
+from .serializers import DocumentSerializer, DocumentAssignmentSerializer, DocumentCategorySerializer
 
 
 class DocumentViewSet(NetBoxModelViewSet):
@@ -15,3 +15,8 @@ class DocumentAssignmentViewSet(NetBoxModelViewSet):
     serializer_class = DocumentAssignmentSerializer
     filterset_class = AssignmentFilterSet
 
+
+class DocumentCategoryViewSet(NetBoxModelViewSet):
+    queryset = DocumentCategory.objects.all()
+    serializer_class = DocumentCategorySerializer
+    filterset_class = DocumentCategoryFilterSet

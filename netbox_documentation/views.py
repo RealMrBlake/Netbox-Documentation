@@ -5,16 +5,16 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.db import transaction
-from django.http import FileResponse, Http404
-from django.shortcuts import redirect, render
+from django.http import FileResponse, Http404, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
 from django.views import View
 from netbox.views import generic
-from .filtersets import DocumentFilterSet, AssignmentFilterSet
-from .forms import DocumentForm, AssignmentForm, ImportForm
+from .filtersets import DocumentFilterSet, AssignmentFilterSet, DocumentCategoryFilterSet
+from .forms import DocumentForm, AssignmentForm, ImportForm, DocumentCategoryForm
 from .importers import ImportFailure, import_document
-from .models import Document, DocumentAssignment, DocumentAttachment
-from .tables import DocumentTable, AssignmentTable
+from .models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
+from .tables import DocumentTable, AssignmentTable, DocumentCategoryTable
 
 
 class EditorAssetView(View):
@@ -50,6 +50,25 @@ class DocumentEditView(generic.ObjectEditView):
 
 class DocumentDeleteView(generic.ObjectDeleteView):
     queryset = Document.objects.all()
+
+
+class DocumentCategoryListView(generic.ObjectListView):
+    queryset = DocumentCategory.objects.select_related("parent").prefetch_related("documents")
+    table = DocumentCategoryTable
+    filterset = DocumentCategoryFilterSet
+
+
+class DocumentCategoryView(generic.ObjectView):
+    queryset = DocumentCategory.objects.prefetch_related("children", "documents")
+
+
+class DocumentCategoryEditView(generic.ObjectEditView):
+    queryset = DocumentCategory.objects.all()
+    form = DocumentCategoryForm
+
+
+class DocumentCategoryDeleteView(generic.ObjectDeleteView):
+    queryset = DocumentCategory.objects.all()
 
 
 class AssignmentListView(generic.ObjectListView):
@@ -113,3 +132,31 @@ class DocumentImportView(PermissionRequiredMixin, View):
             messages.warning(request, warning)
         messages.success(request, f"{upload.name} wurde importiert.")
         return redirect(document)
+
+
+class DocumentMediaUploadView(PermissionRequiredMixin, View):
+    permission_required = "netbox_documentation.change_document"
+
+    def post(self, request, pk):
+        document = get_object_or_404(Document.objects.restrict(request.user, "change"), pk=pk)
+        upload = request.FILES.get("file")
+        if not upload:
+            return JsonResponse({"error": "Keine Datei empfangen."}, status=400)
+        limit = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("max_import_size_mb", 25)
+        if upload.size > limit * 1024 * 1024:
+            return JsonResponse({"error": f"Die Datei ist größer als {limit} MB."}, status=400)
+        allowed = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+        if upload.content_type not in allowed:
+            return JsonResponse({"error": "Im Editor sind JPEG, PNG, GIF und WebP erlaubt."}, status=400)
+        try:
+            from PIL import Image
+            image = Image.open(upload)
+            image.verify()
+            upload.seek(0)
+        except Exception:
+            return JsonResponse({"error": "Die hochgeladene Datei ist kein gültiges Bild."}, status=400)
+        attachment = DocumentAttachment.objects.create(
+            document=document, file=upload, original_name=upload.name,
+            content_type=upload.content_type or "", size=upload.size,
+        )
+        return JsonResponse({"location": attachment.file.url})

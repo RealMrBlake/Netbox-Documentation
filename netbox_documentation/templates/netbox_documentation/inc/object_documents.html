@@ -7,5 +7,5 @@
     </a>
   {% empty %}<div class="list-group-item text-muted">Keine Dokumentation zugeordnet.</div>{% endfor %}
   </div>
-  {% if perms.netbox_documentation.add_documentassignment %}<div class="card-footer"><a href="{% url 'plugins:netbox_documentation:documentassignment_add' %}?assigned_object_type={{ content_type.pk }}&assigned_object_id={{ object.pk }}" class="btn btn-sm btn-primary"><i class="mdi mdi-link-plus"></i> Zuordnen</a></div>{% endif %}
+  {% if perms.netbox_documentation.add_documentassignment %}<div class="card-footer"><a href="{% url 'plugins:netbox_documentation:documentassignment_add' %}?assigned_object_type={{ content_type.pk }}&assigned_object={{ object.pk }}" class="btn btn-sm btn-primary"><i class="mdi mdi-link-plus"></i> Zuordnen</a></div>{% endif %}
 </div>

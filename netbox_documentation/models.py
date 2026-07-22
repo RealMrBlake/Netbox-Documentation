@@ -15,6 +15,7 @@ class Document(NetBoxModel):
     body_format = models.CharField(max_length=10, choices=BODY_FORMAT_CHOICES, default="html")
     summary = models.CharField(max_length=500, blank=True)
     is_published = models.BooleanField(default=True)
+    category = models.ForeignKey("DocumentCategory", on_delete=models.SET_NULL, null=True, blank=True, related_name="documents")
 
     class Meta:
         ordering = ("title",)
@@ -54,6 +55,42 @@ class Document(NetBoxModel):
             "margin-left", "text-align", "text-decoration", "vertical-align", "width",
         })
         return bleach.clean(value, tags=tags, attributes=attributes, protocols=("http", "https", "mailto"), css_sanitizer=css)
+
+
+class DocumentCategory(NetBoxModel):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="children")
+    description = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        ordering = ("name",)
+        constraints = [models.UniqueConstraint(fields=("parent", "slug"), name="%(app_label)s_%(class)s_unique_parent_slug")]
+        verbose_name_plural = "document categories"
+
+    def __str__(self):
+        names = [self.name]
+        parent = self.parent
+        seen = {self.pk}
+        while parent and parent.pk not in seen:
+            names.append(parent.name)
+            seen.add(parent.pk)
+            parent = parent.parent
+        return " / ".join(reversed(names))
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_documentation:documentcategory", args=[self.pk])
+
+    def clean(self):
+        super().clean()
+        from django.core.exceptions import ValidationError
+        parent = self.parent
+        seen = {self.pk} if self.pk else set()
+        while parent:
+            if parent.pk in seen:
+                raise ValidationError({"parent": "Ein Ordner kann nicht sich selbst oder einem Unterordner untergeordnet werden."})
+            seen.add(parent.pk)
+            parent = parent.parent
 
 
 class DocumentAssignment(NetBoxModel):
