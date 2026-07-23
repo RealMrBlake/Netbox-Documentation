@@ -11,7 +11,9 @@
     .toolbar { position: sticky; top: 0; z-index: 2; display: flex; justify-content: center; gap: .75rem; padding: .8rem; background: #fff; border-bottom: 1px solid #ccd2d8; }
     .toolbar button, .toolbar a { border: 1px solid #6c757d; border-radius: .3rem; padding: .55rem .9rem; background: #fff; color: #212529; text-decoration: none; cursor: pointer; font: inherit; }
     .toolbar button { color: #fff; background: #4263eb; border-color: #4263eb; }
+    .toolbar a.active { color: #fff; background: #495057; border-color: #495057; }
     article { width: min(210mm, calc(100% - 2rem)); min-height: 297mm; margin: 1.5rem auto; padding: 18mm 17mm; background: #fff; box-shadow: 0 .2rem 1rem rgba(0,0,0,.12); }
+    article.landscape { width: min(297mm, calc(100% - 2rem)); min-height: 210mm; }
     h1 { margin: 0 0 .25rem; font-size: 24pt; line-height: 1.2; }
     .summary { color: #4b5563; font-size: 13pt; margin: 0 0 1rem; }
     .meta { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; padding: .65rem 0; margin-bottom: 1.4rem; color: #6b7280; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 9pt; }
@@ -32,7 +34,7 @@
     .content .doc-cell-middle { vertical-align: middle; }
     .content pre, .content code { white-space: pre-wrap; overflow-wrap: anywhere; font-family: Consolas, monospace; }
     .content a { color: #174ea6; overflow-wrap: anywhere; }
-    @page { size: A4; margin: 15mm; }
+    @page { size: A4 {% if request.GET.orientation == 'landscape' %}landscape{% else %}portrait{% endif %}; margin: 15mm; }
     @media print {
       body { background: #fff; }
       .toolbar { display: none !important; }
@@ -46,9 +48,11 @@
 <body>
   <div class="toolbar">
     <button type="button" onclick="window.print()">Drucken / Als PDF speichern</button>
+    <a href="?orientation=portrait"{% if request.GET.orientation != 'landscape' %} class="active"{% endif %}>Hochformat</a>
+    <a href="?orientation=landscape"{% if request.GET.orientation == 'landscape' %} class="active"{% endif %}>Querformat</a>
     <a href="{{ object.get_absolute_url }}">Zurück zur Dokumentation</a>
   </div>
-  <article>
+  <article{% if request.GET.orientation == 'landscape' %} class="landscape"{% endif %}>
     <header>
       <h1>{{ object.title }}</h1>
       {% if object.summary %}<p class="summary">{{ object.summary }}</p>{% endif %}
