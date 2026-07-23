@@ -184,7 +184,10 @@ class DocumentImportView(PermissionRequiredMixin, View):
 
     def _import_excel_sheets(self, request, form, upload):
         try:
-            sheets = import_excel_sheets(upload, flatten=form.cleaned_data.get("flatten_excel_tables", False))
+            sheets = import_excel_sheets(
+                upload, flatten=form.cleaned_data.get("flatten_excel_tables", False),
+                metadata_only=True, include_image_data=False,
+            )
         except (ImportFailure, Exception) as exc:
             form.add_error("file", f"Excel-Mehrblattimport fehlgeschlagen: {exc}")
             return render(request, self.template_name, {"form": form})
@@ -210,10 +213,14 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
     def get_preview(self, request, token):
         return get_object_or_404(ExcelImportPreview, pk=token, user=request.user)
 
-    def read_sheets(self, preview):
+    def read_sheets(self, preview, *, for_preview=False):
         preview.file.open("rb")
         try:
-            return import_excel_sheets(preview.file, flatten=preview.flatten)
+            return import_excel_sheets(
+                preview.file, flatten=preview.flatten,
+                preview_max_rows=100 if for_preview else None,
+                include_image_data=not for_preview,
+            )
         finally:
             preview.file.close()
 
@@ -249,7 +256,7 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
             messages.error(request, "Diese Importvorschau ist abgelaufen. Bitte die Exceldatei erneut hochladen.")
             return redirect("plugins:netbox_documentation:document_import")
         try:
-            sheets = self.read_sheets(preview)
+            sheets = self.read_sheets(preview, for_preview=True)
         except (ImportFailure, Exception) as exc:
             self.delete_preview(preview)
             messages.error(request, f"Die Excel-Vorschau konnte nicht erzeugt werden: {exc}")

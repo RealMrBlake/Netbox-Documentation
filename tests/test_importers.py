@@ -90,6 +90,43 @@ def test_excel_multi_sheet_import_creates_one_result_per_sheet():
     assert "Leitstelle" in results[1].markdown
 
 
+def test_excel_metadata_phase_skips_document_rendering():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Großes Blatt"
+    sheet.append(["Name", "IP"])
+    sheet.append(["web01", "10.0.0.1"])
+    stream = BytesIO()
+    workbook.save(stream)
+
+    results = import_excel_sheets(
+        Upload(stream.getvalue(), "kunde.xlsx"), metadata_only=True,
+        include_image_data=False,
+    )
+
+    assert [result.title for result in results] == ["Großes Blatt"]
+    assert results[0].markdown == ""
+
+
+def test_excel_preview_limits_rows_without_affecting_sheet_detection():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["Nummer"])
+    for number in range(1, 151):
+        sheet.append([number])
+    stream = BytesIO()
+    workbook.save(stream)
+
+    results = import_excel_sheets(
+        Upload(stream.getvalue(), "gross.xlsx"), preview_max_rows=100,
+        include_image_data=False,
+    )
+
+    assert "Vorschau auf 100 von 151 Zeilen begrenzt" in results[0].markdown
+    assert ">99<" in results[0].markdown
+    assert ">100<" not in results[0].markdown
+
+
 def test_excel_flatten_turns_cells_into_document_flow():
     workbook = Workbook()
     sheet = workbook.active

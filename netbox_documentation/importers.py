@@ -98,7 +98,10 @@ def _xlsx(content, flatten=False):
     return ImportResult("\n\n".join(sections), body_format="markdown" if flatten else "html")
 
 
-def import_excel_sheets(upload, flatten=False) -> list[ExcelSheetResult]:
+def import_excel_sheets(
+    upload, flatten=False, *, metadata_only=False, preview_max_rows=None,
+    include_image_data=True,
+) -> list[ExcelSheetResult]:
     """Convert each non-empty worksheet into an individual document payload."""
     from openpyxl import load_workbook
     from openpyxl.utils import get_column_letter
@@ -106,14 +109,10 @@ def import_excel_sheets(upload, flatten=False) -> list[ExcelSheetResult]:
     suffix = Path(upload.name).suffix.lower()
     if suffix not in {".xlsx", ".xlsm"}:
         raise ImportFailure("Der Mehrblattimport unterstützt XLSX- und XLSM-Dateien.")
-    content = upload.read()
     upload.seek(0)
-    workbook = load_workbook(BytesIO(content), read_only=False, data_only=True)
+    workbook = load_workbook(upload, read_only=False, data_only=True)
     results = []
     for sheet in workbook.worksheets:
-        rows = [["" if cell is None else str(cell) for cell in row] for row in sheet.iter_rows(values_only=True)]
-        while rows and not any(value for value in rows[-1]):
-            rows.pop()
         images = []
         for number, image in enumerate(getattr(sheet, "_images", ()), 1):
             image_format = (getattr(image, "format", None) or "png").lower()
@@ -124,27 +123,46 @@ def import_excel_sheets(upload, flatten=False) -> list[ExcelSheetResult]:
             anchor = getattr(image, "anchor", None)
             marker = getattr(anchor, "_from", None)
             cell = f"{get_column_letter(marker.col + 1)}{marker.row + 1}" if marker else ""
-            try:
-                image_content = image._data()
-            except (AttributeError, OSError, ValueError):
-                continue
+            image_content = b""
+            if include_image_data and not metadata_only:
+                try:
+                    image_content = image._data()
+                except (AttributeError, OSError, ValueError):
+                    continue
             images.append(ImportedImage(
                 name=f"{slugify_filename(sheet.title)}-{number}.{image_format if image_format != 'jpeg' else 'jpg'}",
                 content=image_content, content_type=f"image/{image_format}", cell=cell,
             ))
-        if not rows and not images:
+        has_content = _worksheet_has_content(sheet)
+        if not has_content and not images:
             continue
-        if rows:
-            markdown = _render_flattened_worksheet(sheet) if flatten else _render_excel_worksheet_html(sheet, workbook)
+        if metadata_only:
+            markdown = ""
+        elif has_content:
+            markdown = (
+                _render_flattened_worksheet(sheet, max_rows=preview_max_rows) if flatten else
+                _render_excel_worksheet_html(sheet, workbook, max_rows=preview_max_rows)
+            )
         else:
             markdown = ""
         results.append(ExcelSheetResult(
             title=sheet.title, markdown=markdown, images=images,
             body_format="markdown" if flatten else "html",
         ))
+    workbook.close()
+    upload.seek(0)
     if not results:
         raise ImportFailure("Die Arbeitsmappe enthält keine Daten oder unterstützten Bilder.")
     return results
+
+
+def _worksheet_has_content(sheet):
+    """Check for a value without materializing the complete worksheet in memory."""
+    return any(
+        cell.value not in (None, "")
+        for row in sheet.iter_rows()
+        for cell in row
+    )
 
 
 def slugify_filename(value):
@@ -208,15 +226,20 @@ def _excel_cell_style(cell, workbook):
     return "; ".join(declarations)
 
 
-def _render_excel_worksheet_html(sheet, workbook):
+def _render_excel_worksheet_html(sheet, workbook, max_rows=None):
     """Render worksheet values and the most relevant visual Excel cell formatting."""
     from openpyxl.utils import get_column_letter
 
-    populated = [cell for row in sheet.iter_rows() for cell in row if cell.value not in (None, "")]
-    if not populated:
+    last_row = last_column = 0
+    for row in sheet.iter_rows():
+        for cell in row:
+            if cell.value not in (None, ""):
+                last_row = max(last_row, cell.row)
+                last_column = max(last_column, cell.column)
+    if not last_row:
         return "<p><em>Keine Inhalte</em></p>"
-    max_row = max(cell.row for cell in populated)
-    max_column = max(cell.column for cell in populated)
+    max_row = min(last_row, max_rows) if max_rows else last_row
+    max_column = last_column
     merged_starts, merged_children = {}, set()
     for merged in sheet.merged_cells.ranges:
         if merged.min_row > max_row or merged.min_col > max_column:
@@ -256,10 +279,12 @@ def _render_excel_worksheet_html(sheet, workbook):
             output.append(f"<td{' ' if attributes else ''}{' '.join(attributes)}>{value}</td>")
         output.append("</tr>")
     output.append("</tbody></table>")
+    if max_rows and last_row > max_rows:
+        output.append(f"<p><em>Vorschau auf {max_rows} von {last_row} Zeilen begrenzt.</em></p>")
     return "".join(output)
 
 
-def _render_flattened_worksheet(sheet):
+def _render_flattened_worksheet(sheet, max_rows=None):
     """Flatten ordinary cells while preserving explicitly defined Excel tables."""
     from openpyxl.utils.cell import range_boundaries
 
@@ -278,7 +303,8 @@ def _render_flattened_worksheet(sheet):
 
     blocks = []
     rendered_tables = set()
-    for row_number in range(1, sheet.max_row + 1):
+    rendered_max_row = min(sheet.max_row, max_rows) if max_rows else sheet.max_row
+    for row_number in range(1, rendered_max_row + 1):
         ordinary_values = []
         tables_starting_here = []
         for column_number in range(1, sheet.max_column + 1):
@@ -296,11 +322,14 @@ def _render_flattened_worksheet(sheet):
         for min_col, min_row, max_col, max_row in tables_starting_here:
             rows = []
             for table_row in sheet.iter_rows(
-                min_row=min_row, max_row=max_row, min_col=min_col, max_col=max_col, values_only=True
+                min_row=min_row, max_row=min(max_row, rendered_max_row),
+                min_col=min_col, max_col=max_col, values_only=True
             ):
                 rows.append(["" if value is None else str(value) for value in table_row])
             if rows:
                 blocks.append(_render_excel_rows(rows, flatten=False))
+    if max_rows and sheet.max_row > max_rows:
+        blocks.append(f"_Vorschau auf {max_rows} von {sheet.max_row} Zeilen begrenzt._")
     return "\n\n".join(blocks) or "_Keine Inhalte_"
 
 
