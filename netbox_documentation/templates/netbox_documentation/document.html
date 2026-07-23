@@ -3,36 +3,27 @@
 {% block head %}
   {{ block.super }}
   <style>
-    .documentation-content { overflow-x: auto; }
+    .documentation-content {
+      overflow-x: auto;
+      font-family: Arial, sans-serif;
+      font-size: 11pt;
+    }
     .documentation-content table {
-      width: max-content !important;
-      min-width: 100%;
-      max-width: none !important;
+      width: auto;
+      max-width: 100%;
       table-layout: auto;
-      border-collapse: collapse !important;
-      border: 1px solid var(--tblr-border-color, #adb5bd) !important;
-      font-size: .875rem;
-      line-height: 1.25;
+      border-collapse: collapse;
     }
     .documentation-content th,
     .documentation-content td {
-      min-width: 8rem;
-      max-width: 24rem;
-      padding: .4rem .55rem !important;
-      border: 1px solid var(--tblr-border-color, #adb5bd) !important;
+      padding: .45rem;
+      border: 1px solid #adb5bd;
       overflow-wrap: anywhere;
       word-break: normal;
       vertical-align: top;
     }
     .documentation-content th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background: var(--tblr-bg-surface-secondary, #f1f3f5) !important;
       font-weight: 700;
-    }
-    .documentation-content tbody tr:nth-child(even) td {
-      background: color-mix(in srgb, var(--tblr-bg-surface-secondary, #f1f3f5) 45%, transparent);
     }
     .documentation-content table.doc-table-full-width { width: 100% !important; }
     .documentation-content table.doc-table-compact th,
