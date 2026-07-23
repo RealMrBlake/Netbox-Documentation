@@ -175,6 +175,6 @@
 
 {% block pre_form_fields %}
   {% if not object.pk %}
-    <div class="alert alert-info">Speichere die neue Dokumentation einmal. Danach können Bilder direkt über die Editor-Werkzeugleiste hochgeladen werden.</div>
+    <div class="alert alert-info">Eingefügte oder hineinkopierte Bilder werden beim ersten Speichern automatisch als Medien der neuen Dokumentation abgelegt. Nach dem ersten Speichern ist zusätzlich der direkte Bildupload verfügbar.</div>
   {% endif %}
 {% endblock pre_form_fields %}

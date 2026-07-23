@@ -1,6 +1,7 @@
 from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.core.files.base import ContentFile
 from django.db.models import Q
 from django.utils.html import format_html
 from utilities.forms import get_field_value
@@ -11,7 +12,8 @@ from utilities.forms.rendering import FieldSet
 from utilities.forms.widgets import HTMXSelect
 from netbox.forms import NetBoxModelForm
 from dcim.models import Device
-from .models import Document, DocumentAssignment, DocumentCategory
+from .embedded_images import EmbeddedImageError, store_embedded_images, validate_embedded_images
+from .models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
 
 
 def help_label(label, description):
@@ -58,6 +60,39 @@ class DocumentForm(NetBoxModelForm):
             from markdown import markdown
             self.initial["body"] = markdown(self.instance.body, extensions=("extra", "sane_lists"))
             self.initial["body_format"] = "html"
+
+    def clean_body(self):
+        body = self.cleaned_data.get("body", "")
+        limit = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("max_import_size_mb", 25)
+        try:
+            validate_embedded_images(body, limit * 1024 * 1024)
+        except EmbeddedImageError as exc:
+            raise forms.ValidationError(str(exc)) from exc
+        return body
+
+    def save(self, commit=True):
+        document = super().save(commit=commit)
+        if not commit or not document.pk or "data:image/" not in (document.body or "").lower():
+            return document
+
+        limit = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("max_import_size_mb", 25)
+        counter = 0
+
+        def save_image(mime, content):
+            nonlocal counter
+            counter += 1
+            extension = {"image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp"}[mime]
+            name = f"editor-bild-{document.pk}-{counter}.{extension}"
+            attachment = DocumentAttachment(
+                document=document, original_name=name, content_type=mime, size=len(content),
+            )
+            attachment.file.save(name, ContentFile(content), save=False)
+            attachment.save()
+            return attachment.file.url
+
+        document.body = store_embedded_images(document.body, limit * 1024 * 1024, save_image)
+        document.save(update_fields=("body", "last_updated"))
+        return document
 
 
 class AssignmentForm(NetBoxModelForm):
