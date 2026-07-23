@@ -201,7 +201,10 @@ class DocumentImportView(PermissionRequiredMixin, View):
             user=request.user, category=form.cleaned_data["category"], file=upload,
             original_name=upload.name, content_type=upload.content_type or "",
             flatten=form.cleaned_data.get("flatten_excel_tables", False),
-            sheet_metadata=[{"title": sheet.title, "image_count": len(sheet.images)} for sheet in sheets],
+            sheet_metadata=[{
+                "title": sheet.title, "image_count": len(sheet.images),
+                "source_index": sheet.source_index,
+            } for sheet in sheets],
         )
         return redirect("plugins:netbox_documentation:excel_import_preview", token=preview.pk)
 
@@ -213,13 +216,14 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
     def get_preview(self, request, token):
         return get_object_or_404(ExcelImportPreview, pk=token, user=request.user)
 
-    def read_sheets(self, preview, *, for_preview=False):
+    def read_sheets(self, preview, *, for_preview=False, selected_indexes=None):
         preview.file.open("rb")
         try:
             return import_excel_sheets(
                 preview.file, flatten=preview.flatten,
                 preview_max_rows=100 if for_preview else None,
                 include_image_data=not for_preview,
+                selected_indexes=selected_indexes,
             )
         finally:
             preview.file.close()
@@ -270,15 +274,15 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
             self.delete_preview(preview)
             messages.info(request, "Excel-Import wurde abgebrochen.")
             return redirect("plugins:netbox_documentation:document_import")
-        try:
-            sheets = self.read_sheets(preview)
-        except (ImportFailure, Exception) as exc:
-            self.delete_preview(preview)
-            messages.error(request, f"Die Exceldatei konnte nicht erneut gelesen werden: {exc}")
-            return redirect("plugins:netbox_documentation:document_import")
         formset = ExcelSheetSelectionFormSet(request.POST)
         if not formset.is_valid():
-            return self.render_preview(request, preview, sheets, formset)
+            try:
+                preview_sheets = self.read_sheets(preview, for_preview=True)
+            except (ImportFailure, Exception) as exc:
+                self.delete_preview(preview)
+                messages.error(request, f"Die Exceldatei konnte nicht erneut gelesen werden: {exc}")
+                return redirect("plugins:netbox_documentation:document_import")
+            return self.render_preview(request, preview, preview_sheets, formset)
         if not preview.category:
             self.delete_preview(preview)
             messages.error(request, "Der gewählte Zielordner existiert nicht mehr. Bitte den Import erneut starten.")
@@ -287,10 +291,18 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
         for form in formset.forms:
             data = form.cleaned_data
             if data.get("include"):
-                if data["index"] < 0 or data["index"] >= len(sheets):
+                if data["index"] < 0 or data["index"] >= len(preview.sheet_metadata):
                     raise PermissionDenied
-                selections[data["index"]] = data["title"].strip()
-        result = self.create_documents(preview, sheets, selections)
+                metadata = preview.sheet_metadata[data["index"]]
+                source_index = metadata.get("source_index", data["index"])
+                selections[source_index] = data["title"].strip()
+        try:
+            selected_sheets = self.read_sheets(preview, selected_indexes=selections)
+        except (ImportFailure, Exception) as exc:
+            messages.error(request, f"Die ausgewählten Excel-Blätter konnten nicht importiert werden: {exc}")
+            return redirect("plugins:netbox_documentation:excel_import_preview", token=preview.pk)
+        sheets_by_index = {sheet.source_index: sheet for sheet in selected_sheets}
+        result = self.create_documents(preview, sheets_by_index, selections)
         self.delete_preview(preview)
         messages.success(request, (
             f"{result['documents']} Arbeitsblätter als Dokumentationen in „{result['category']}“ importiert; "
@@ -302,11 +314,6 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
     @transaction.atomic
     def create_documents(preview, sheets, selections):
         from django.core.files.base import ContentFile
-        preview.file.open("rb")
-        try:
-            original_content = preview.file.read()
-        finally:
-            preview.file.close()
         created_documents, image_count = [], 0
         for index, title in selections.items():
             sheet = sheets[index]
@@ -345,12 +352,16 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
             created_documents.append(document)
         if settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("keep_imported_file", True):
             for document in created_documents:
+                preview.file.open("rb")
                 attachment = DocumentAttachment(
                     document=document, original_name=preview.original_name,
-                    content_type=preview.content_type, size=len(original_content),
+                    content_type=preview.content_type, size=preview.file.size,
                 )
-                attachment.file.save(preview.original_name, ContentFile(original_content), save=False)
-                attachment.save()
+                try:
+                    attachment.file.save(preview.original_name, preview.file, save=False)
+                    attachment.save()
+                finally:
+                    preview.file.close()
         return {"documents": len(created_documents), "images": image_count, "category": preview.category}
 
     @staticmethod

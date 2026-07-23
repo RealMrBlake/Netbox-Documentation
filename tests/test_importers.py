@@ -113,6 +113,29 @@ def test_excel_multi_sheet_import_creates_one_result_per_sheet():
     assert "Leitstelle" in results[1].markdown
 
 
+def test_excel_import_renders_only_selected_source_sheets():
+    workbook = Workbook()
+    first = workbook.active
+    first.title = "Nicht gewählt"
+    first.append(["Sehr viele Daten"])
+    second = workbook.create_sheet("Gewählt")
+    second.append(["Nur dieses Blatt"])
+    third = workbook.create_sheet("Auch nicht gewählt")
+    third.append(["Weitere Daten"])
+    stream = BytesIO()
+    workbook.save(stream)
+
+    results = import_excel_sheets(
+        Upload(stream.getvalue(), "auswahl.xlsx"), selected_indexes={1},
+    )
+
+    assert len(results) == 1
+    assert results[0].title == "Gewählt"
+    assert results[0].source_index == 1
+    assert "Nur dieses Blatt" in results[0].markdown
+    assert "Sehr viele Daten" not in results[0].markdown
+
+
 def test_excel_metadata_phase_skips_document_rendering():
     workbook = Workbook()
     sheet = workbook.active

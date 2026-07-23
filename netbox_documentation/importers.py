@@ -30,6 +30,7 @@ class ExcelSheetResult:
     markdown: str
     images: list[ImportedImage] = field(default_factory=list)
     body_format: str = "markdown"
+    source_index: int = 0
 
 
 def import_document(upload, flatten_excel=False) -> ImportResult:
@@ -100,7 +101,7 @@ def _xlsx(content, flatten=False):
 
 def import_excel_sheets(
     upload, flatten=False, *, metadata_only=False, preview_max_rows=None,
-    include_image_data=True,
+    include_image_data=True, selected_indexes=None,
 ) -> list[ExcelSheetResult]:
     """Convert each non-empty worksheet into an individual document payload."""
     from openpyxl import load_workbook
@@ -112,7 +113,10 @@ def import_excel_sheets(
     upload.seek(0)
     workbook = load_workbook(upload, read_only=False, data_only=True)
     results = []
-    for sheet in workbook.worksheets:
+    selected_indexes = set(selected_indexes) if selected_indexes is not None else None
+    for source_index, sheet in enumerate(workbook.worksheets):
+        if selected_indexes is not None and source_index not in selected_indexes:
+            continue
         images = []
         for number, image in enumerate(getattr(sheet, "_images", ()), 1):
             image_format = (getattr(image, "format", None) or "png").lower()
@@ -147,7 +151,7 @@ def import_excel_sheets(
             markdown = ""
         results.append(ExcelSheetResult(
             title=sheet.title, markdown=markdown, images=images,
-            body_format="html",
+            body_format="html", source_index=source_index,
         ))
     workbook.close()
     upload.seek(0)
