@@ -169,17 +169,3 @@ class ExcelImportPreview(models.Model):
 
     def __str__(self):
         return self.original_name
-
-
-class DocumentEditLock(models.Model):
-    """Short-lived advisory lock; optimistic version checks remain authoritative."""
-    _netbox_private = True
-
-    document = models.OneToOneField(Document, on_delete=models.SET_NULL, null=True, related_name="edit_lock")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    token = models.UUIDField(default=uuid.uuid4, editable=False)
-    acquired = models.DateTimeField(auto_now_add=True)
-    heartbeat = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.document} – {self.user}"

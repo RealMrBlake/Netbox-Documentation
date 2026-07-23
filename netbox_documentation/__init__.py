@@ -5,7 +5,7 @@ class DocumentationConfig(PluginConfig):
     name = "netbox_documentation"
     verbose_name = "NetBox Dokumentation"
     description = "Wiki und Office-Dokumentation direkt in NetBox"
-    version = "0.8.0"
+    version = "0.7.0"
     author = "LKE"
     base_url = "documentation"
     min_version = "4.0.0"
@@ -18,7 +18,6 @@ class DocumentationConfig(PluginConfig):
         ],
         "max_import_size_mb": 25,
         "max_archive_size_mb": 250,
-        "edit_lock_timeout_minutes": 5,
         "keep_imported_file": True,
     }
 

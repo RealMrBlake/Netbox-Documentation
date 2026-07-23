@@ -135,48 +135,12 @@
           });
         }
       });
-
-      {% if object.pk %}
-      const lockToken = document.getElementById('id_edit_lock_token');
-      const editForm = document.querySelector('form.object-edit');
-      const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]');
-      const lockUrl = "{% url 'plugins:netbox_documentation:document_lock' pk=object.pk %}";
-      let submitting = false;
-      const heartbeat = () => {
-        if (!lockToken || !lockToken.value || submitting) return;
-        const data = new URLSearchParams({token: lockToken.value, action: 'heartbeat'});
-        fetch(lockUrl, {
-          method: 'POST', credentials: 'same-origin', body: data,
-          headers: {'X-CSRFToken': csrfToken.value, 'Content-Type': 'application/x-www-form-urlencoded'}
-        }).then(response => {
-          if (response.status === 409) {
-            const warning = document.createElement('div');
-            warning.className = 'alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3';
-            warning.style.zIndex = '2000';
-            warning.textContent = 'Die Bearbeitungssperre ist abgelaufen oder wurde übernommen. Bitte Inhalt sichern und die Seite neu laden.';
-            document.body.appendChild(warning);
-          }
-        });
-      };
-      const heartbeatTimer = window.setInterval(heartbeat, 60000);
-      if (editForm) editForm.addEventListener('submit', () => { submitting = true; window.clearInterval(heartbeatTimer); });
-      window.addEventListener('beforeunload', () => {
-        if (submitting || !lockToken || !lockToken.value) return;
-        const data = new FormData();
-        data.append('csrfmiddlewaretoken', csrfToken.value);
-        data.append('token', lockToken.value);
-        data.append('action', 'release');
-        navigator.sendBeacon(lockUrl, data);
-      });
-      {% endif %}
     });
   </script>
 {% endblock javascript %}
 
 {% block pre_form_fields %}
-  {% if object.pk %}
-    <div class="alert alert-success py-2"><i class="mdi mdi-lock-check"></i> Diese Dokumentation ist während der Bearbeitung für dich reserviert.</div>
-  {% else %}
+  {% if not object.pk %}
     <div class="alert alert-info">Speichere die neue Dokumentation einmal. Danach können Bilder direkt über die Editor-Werkzeugleiste hochgeladen werden.</div>
   {% endif %}
 {% endblock pre_form_fields %}

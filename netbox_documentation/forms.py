@@ -39,8 +39,6 @@ class DocumentForm(NetBoxModelForm):
         "rows": 32, "class": "rich-text-editor", "data-rich-text-editor": "true"
     }), help_text="Formatierter Text mit Tabellen, Farben, Schriftarten und Größen.")
     body_format = forms.CharField(widget=forms.HiddenInput(), initial="html")
-    edit_lock_token = forms.CharField(required=False, widget=forms.HiddenInput())
-    expected_version = forms.CharField(required=False, widget=forms.HiddenInput())
     category = DynamicModelChoiceField(queryset=DocumentCategory.objects.all(), required=False, label="Ordner")
 
     fieldsets = (
