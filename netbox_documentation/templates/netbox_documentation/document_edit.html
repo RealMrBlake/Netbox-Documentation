@@ -3,8 +3,6 @@
   {{ block.super }}
   <style>
     body.documentation-editor-page .container-xl { max-width: none !important; }
-    body.documentation-editor-focus #form_fields .field-group:not(.documentation-content-group) { display: none; }
-    body.documentation-editor-focus #form_fields .documentation-content-group { margin-bottom: 0 !important; }
   </style>
   <script src="{% url 'plugins:netbox_documentation:editor_asset' asset_path='tinymce.min.js' %}"></script>
   <script>
@@ -36,7 +34,7 @@
         plugins: 'advlist anchor autolink charmap code fullscreen image link lists media preview searchreplace table visualblocks wordcount',
         toolbar: [
           'undo redo | blocks styles fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor',
-          'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table tablecellcolor link image media | removeformat code netboxfocus fullscreen'
+          'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table tablecellcolor link image media | removeformat code fullscreen'
         ],
         toolbar_mode: 'sliding',
         table_toolbar: 'tableprops tablecellprops tablecellcolor | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol | tablemergecells tablesplitcells | tabledelete',
@@ -150,16 +148,6 @@
               {type: 'menuitem', text: 'Eigene Farbe …', onAction: chooseCellColor},
               {type: 'menuitem', text: 'Zellfarbe entfernen', onAction: () => applyCellColor('')}
             ])
-          });
-          editor.ui.registry.addToggleButton('netboxfocus', {
-            icon: 'expand',
-            tooltip: 'Fokusmodus im NetBox-Fenster',
-            onAction: api => {
-              const active = document.body.classList.toggle('documentation-editor-focus');
-              const container = editor.getContainer();
-              container.style.height = active ? 'calc(100vh - 190px)' : '650px';
-              api.setActive(active);
-            }
           });
         }
         {% if object.pk %},
