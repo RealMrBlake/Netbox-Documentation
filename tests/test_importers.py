@@ -145,7 +145,7 @@ def test_excel_preview_limits_rows_without_affecting_sheet_detection():
         include_image_data=False,
     )
 
-    assert "Vorschau auf 100 von 151 Zeilen begrenzt" in results[0].markdown
+    assert "Vorschau auf 100 Zeilen begrenzt" in results[0].markdown
     assert ">99<" in results[0].markdown
     assert ">100<" not in results[0].markdown
 
@@ -160,10 +160,11 @@ def test_excel_flatten_turns_cells_into_document_flow():
 
     results = import_excel_sheets(Upload(stream.getvalue(), "server.xlsx"), flatten=True)
 
-    assert results[0].markdown == "Name  \nIP\n\ndb01  \n10.0.0.2"
+    assert results[0].body_format == "html"
+    assert results[0].markdown == "<p>Name<br>IP</p>\n<p>db01<br>10.0.0.2</p>"
     assert "Datensatz" not in results[0].markdown
     assert "Feld" not in results[0].markdown
-    assert "|" not in results[0].markdown
+    assert "<table" not in results[0].markdown
 
 
 def test_excel_flatten_preserves_explicit_excel_tables_only():
@@ -182,6 +183,28 @@ def test_excel_flatten_preserves_explicit_excel_tables_only():
     markdown = results[0].markdown
 
     assert "Normaler Hinweis" in markdown
-    assert "| Name" in markdown
-    assert "| web01" in markdown
+    assert "<table" in markdown
+    assert "Name" in markdown
+    assert "web01" in markdown
     assert "Datensatz" not in markdown
+
+
+def test_excel_flatten_preserves_colors_of_explicit_excel_tables():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "Standort"
+    sheet["B1"] = "Adresse"
+    sheet["A2"] = "Verwaltung"
+    sheet["B2"] = "10.1.2.17"
+    for cell in (sheet["A1"], sheet["B1"]):
+        cell.fill = PatternFill(fill_type="solid", fgColor="A5BF60")
+        cell.font = Font(color="FFFFFF", bold=True)
+    sheet.add_table(Table(displayName="Standorte", ref="A1:B2"))
+    stream = BytesIO()
+    workbook.save(stream)
+
+    results = import_excel_sheets(Upload(stream.getvalue(), "farben.xlsx"), flatten=True)
+
+    assert results[0].body_format == "html"
+    assert results[0].markdown.count("background-color: #a5bf60") == 2
+    assert results[0].markdown.count("color: #ffffff") == 2

@@ -91,11 +91,11 @@ def _xlsx(content, flatten=False):
             rows.pop()
         if not rows:
             continue
-        rendered = _render_flattened_worksheet(sheet) if flatten else _render_excel_worksheet_html(sheet, workbook)
-        sections.append(f"## {sheet.title}\n\n{rendered}" if flatten else f"<h2>{escape(sheet.title)}</h2>\n{rendered}")
+        rendered = _render_flattened_worksheet(sheet, workbook) if flatten else _render_excel_worksheet_html(sheet, workbook)
+        sections.append(f"<h2>{escape(sheet.title)}</h2>\n{rendered}")
     if not sections:
         raise ImportFailure("Die Arbeitsmappe enthält keine Daten.")
-    return ImportResult("\n\n".join(sections), body_format="markdown" if flatten else "html")
+    return ImportResult("\n\n".join(sections), body_format="html")
 
 
 def import_excel_sheets(
@@ -140,14 +140,14 @@ def import_excel_sheets(
             markdown = ""
         elif has_content:
             markdown = (
-                _render_flattened_worksheet(sheet, max_rows=preview_max_rows) if flatten else
+                _render_flattened_worksheet(sheet, workbook, max_rows=preview_max_rows) if flatten else
                 _render_excel_worksheet_html(sheet, workbook, max_rows=preview_max_rows)
             )
         else:
             markdown = ""
         results.append(ExcelSheetResult(
             title=sheet.title, markdown=markdown, images=images,
-            body_format="markdown" if flatten else "html",
+            body_format="html",
         ))
     workbook.close()
     upload.seek(0)
@@ -278,19 +278,26 @@ def _excel_table_cell_styles(sheet, workbook, max_row, max_column):
     return styles
 
 
-def _render_excel_worksheet_html(sheet, workbook, max_rows=None):
+def _render_excel_worksheet_html(sheet, workbook, max_rows=None, bounds=None):
     """Render worksheet values and the most relevant visual Excel cell formatting."""
     from openpyxl.utils import get_column_letter
 
+    if bounds:
+        start_column, start_row, bound_max_column, bound_max_row = bounds
+    else:
+        start_column, start_row, bound_max_column, bound_max_row = 1, 1, sheet.max_column, sheet.max_row
     last_row = last_column = 0
-    for row in sheet.iter_rows():
+    for row in sheet.iter_rows(
+        min_row=start_row, max_row=bound_max_row,
+        min_col=start_column, max_col=bound_max_column,
+    ):
         for cell in row:
             if cell.value not in (None, ""):
                 last_row = max(last_row, cell.row)
                 last_column = max(last_column, cell.column)
     if not last_row:
         return "<p><em>Keine Inhalte</em></p>"
-    max_row = min(last_row, max_rows) if max_rows else last_row
+    max_row = min(last_row, start_row + max_rows - 1) if max_rows else last_row
     max_column = last_column
     table_styles = _excel_table_cell_styles(sheet, workbook, max_row, max_column)
     merged_starts, merged_children = {}, set()
@@ -306,16 +313,16 @@ def _render_excel_worksheet_html(sheet, workbook, max_rows=None):
                 if (row, column) != (merged.min_row, merged.min_col):
                     merged_children.add((row, column))
     columns = []
-    for column in range(1, max_column + 1):
+    for column in range(start_column, max_column + 1):
         width = sheet.column_dimensions[get_column_letter(column)].width
         columns.append(f'<col style="width: {max(3, min(float(width or 13), 80)):.2f}ch">')
     output = ['<table class="doc-table-bordered"><colgroup>', *columns, "</colgroup><tbody>"]
-    for row in range(1, max_row + 1):
+    for row in range(start_row, max_row + 1):
         row_style = ""
         if sheet.row_dimensions[row].height:
             row_style = f' style="height: {float(sheet.row_dimensions[row].height):g}pt"'
         output.append(f"<tr{row_style}>")
-        for column in range(1, max_column + 1):
+        for column in range(start_column, max_column + 1):
             if (row, column) in merged_children:
                 continue
             cell = sheet.cell(row=row, column=column)
@@ -336,12 +343,12 @@ def _render_excel_worksheet_html(sheet, workbook, max_rows=None):
             output.append(f"<td{' ' if attributes else ''}{' '.join(attributes)}>{value}</td>")
         output.append("</tr>")
     output.append("</tbody></table>")
-    if max_rows and last_row > max_rows:
-        output.append(f"<p><em>Vorschau auf {max_rows} von {last_row} Zeilen begrenzt.</em></p>")
+    if max_rows and last_row > start_row + max_rows - 1:
+        output.append(f"<p><em>Vorschau auf {max_rows} Zeilen begrenzt.</em></p>")
     return "".join(output)
 
 
-def _render_flattened_worksheet(sheet, max_rows=None):
+def _render_flattened_worksheet(sheet, workbook, max_rows=None):
     """Flatten ordinary cells while preserving explicitly defined Excel tables."""
     from openpyxl.utils.cell import range_boundaries
 
@@ -373,21 +380,17 @@ def _render_flattened_worksheet(sheet, max_rows=None):
                 continue
             value = sheet.cell(row=row_number, column=column_number).value
             if value not in (None, ""):
-                ordinary_values.append(_escape_markdown_text(value))
+                ordinary_values.append(escape(str(value)).replace("\n", "<br>"))
         if ordinary_values:
-            blocks.append("  \n".join(ordinary_values))
+            blocks.append("<p>" + "<br>".join(ordinary_values) + "</p>")
         for min_col, min_row, max_col, max_row in tables_starting_here:
-            rows = []
-            for table_row in sheet.iter_rows(
-                min_row=min_row, max_row=min(max_row, rendered_max_row),
-                min_col=min_col, max_col=max_col, values_only=True
-            ):
-                rows.append(["" if value is None else str(value) for value in table_row])
-            if rows:
-                blocks.append(_render_excel_rows(rows, flatten=False))
+            blocks.append(_render_excel_worksheet_html(
+                sheet, workbook,
+                bounds=(min_col, min_row, max_col, min(max_row, rendered_max_row)),
+            ))
     if max_rows and sheet.max_row > max_rows:
-        blocks.append(f"_Vorschau auf {max_rows} von {sheet.max_row} Zeilen begrenzt._")
-    return "\n\n".join(blocks) or "_Keine Inhalte_"
+        blocks.append(f"<p><em>Vorschau auf {max_rows} von {sheet.max_row} Zeilen begrenzt.</em></p>")
+    return "\n".join(blocks) or "<p><em>Keine Inhalte</em></p>"
 
 
 def _pdf(content):
