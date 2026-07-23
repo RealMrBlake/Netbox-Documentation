@@ -382,9 +382,14 @@ def _render_flattened_worksheet(sheet, workbook, max_rows=None):
                     tables_starting_here.append(bounds)
                     rendered_tables.add(bounds)
                 continue
-            value = sheet.cell(row=row_number, column=column_number).value
+            cell = sheet.cell(row=row_number, column=column_number)
+            value = cell.value
             if value not in (None, ""):
-                ordinary_values.append(escape(str(value)).replace("\n", "<br>"))
+                rendered_value = escape(str(value)).replace("\n", "<br>")
+                style = _excel_cell_style(cell, workbook) if cell.has_style else ""
+                if style:
+                    rendered_value = f'<span style="{style}">{rendered_value}</span>'
+                ordinary_values.append(rendered_value)
         if ordinary_values:
             blocks.append("<p>" + "<br>".join(ordinary_values) + "</p>")
         for min_col, min_row, max_col, max_row in tables_starting_here:

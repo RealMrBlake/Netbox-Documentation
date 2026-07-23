@@ -231,3 +231,21 @@ def test_excel_flatten_preserves_colors_of_explicit_excel_tables():
     assert results[0].body_format == "html"
     assert results[0].markdown.count("background-color: #a5bf60") == 2
     assert results[0].markdown.count("color: #ffffff") == 2
+
+
+def test_excel_flatten_preserves_colored_cells_outside_tables():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "Wichtiger Hinweis"
+    sheet["A1"].fill = PatternFill(fill_type="solid", fgColor="FFF3BF")
+    sheet["A1"].font = Font(color="9C2A2A", bold=True)
+    sheet["A3"] = "Normaler Text"
+    stream = BytesIO()
+    workbook.save(stream)
+
+    results = import_excel_sheets(Upload(stream.getvalue(), "hinweis.xlsx"), flatten=True)
+
+    assert results[0].body_format == "html"
+    assert '<span style="background-color: #fff3bf; color: #9c2a2a; font-weight: bold' in results[0].markdown
+    assert "Wichtiger Hinweis</span>" in results[0].markdown
+    assert "<table" not in results[0].markdown
