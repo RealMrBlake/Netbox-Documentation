@@ -35,14 +35,62 @@
         menubar: 'file edit view insert format tools table help',
         plugins: 'advlist anchor autolink charmap code fullscreen image link lists media preview searchreplace table visualblocks wordcount',
         toolbar: [
-          'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor',
+          'undo redo | blocks styles fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor',
           'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table link image media | removeformat code netboxfocus fullscreen'
         ],
         toolbar_mode: 'sliding',
         table_toolbar: 'tableprops tablecellprops | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol | tablemergecells tablesplitcells | tabledelete',
+        table_appearance_options: true,
+        table_advtab: true,
+        table_cell_advtab: true,
+        table_row_advtab: true,
+        table_sizing_mode: 'responsive',
+        table_default_attributes: {border: '1'},
+        table_default_styles: {'border-collapse': 'collapse'},
+        table_class_list: [
+          {title: 'Standard mit Rahmen', value: 'doc-table-bordered'},
+          {title: 'Kompakt', value: 'doc-table-compact'},
+          {title: 'Gestreifte Zeilen', value: 'doc-table-striped'},
+          {title: 'Blaue Kopfzeile', value: 'doc-table-header-blue'},
+          {title: 'Grüne Kopfzeile', value: 'doc-table-header-green'},
+          {title: 'Dunkle Kopfzeile', value: 'doc-table-header-dark'},
+          {title: 'Ohne Rahmen', value: 'doc-table-borderless'},
+          {title: 'Volle Breite', value: 'doc-table-full-width'}
+        ],
+        table_cell_class_list: [
+          {title: 'Normal', value: ''},
+          {title: 'Gelb hervorheben', value: 'doc-cell-yellow'},
+          {title: 'Grün hervorheben', value: 'doc-cell-green'},
+          {title: 'Rot hervorheben', value: 'doc-cell-red'},
+          {title: 'Blau hervorheben', value: 'doc-cell-blue'},
+          {title: 'Vertikal mittig', value: 'doc-cell-middle'}
+        ],
+        style_formats_merge: true,
+        style_formats: [
+          {title: 'Tabellenzelle: Gelb', selector: 'td,th', classes: 'doc-cell-yellow'},
+          {title: 'Tabellenzelle: Grün', selector: 'td,th', classes: 'doc-cell-green'},
+          {title: 'Tabellenzelle: Rot', selector: 'td,th', classes: 'doc-cell-red'},
+          {title: 'Tabellenzelle: Blau', selector: 'td,th', classes: 'doc-cell-blue'}
+        ],
         font_family_formats: 'Arial=arial,helvetica,sans-serif; Calibri=calibri,arial,sans-serif; Courier New=courier new,courier,monospace; Georgia=georgia,palatino,serif; Times New Roman=times new roman,times,serif; Verdana=verdana,geneva,sans-serif',
         font_size_formats: '8pt 9pt 10pt 11pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
-        content_style: 'body { font-family: Arial, sans-serif; font-size: 11pt; padding: 1rem; } table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #adb5bd; padding: .45rem; }',
+        content_style: `
+          body { font-family: Arial, sans-serif; font-size: 11pt; padding: 1rem; }
+          table { border-collapse: collapse; width: auto; }
+          th, td { border: 1px solid #adb5bd; padding: .45rem; }
+          table.doc-table-full-width { width: 100%; }
+          table.doc-table-compact th, table.doc-table-compact td { padding: .2rem .35rem; font-size: .875rem; }
+          table.doc-table-striped tbody tr:nth-child(even) td { background: #f1f3f5; }
+          table.doc-table-header-blue thead th { background: #206bc4; color: #fff; }
+          table.doc-table-header-green thead th { background: #2b8a3e; color: #fff; }
+          table.doc-table-header-dark thead th { background: #343a40; color: #fff; }
+          table.doc-table-borderless, table.doc-table-borderless th, table.doc-table-borderless td { border: 0; }
+          .doc-cell-yellow { background: #fff3bf !important; }
+          .doc-cell-green { background: #d3f9d8 !important; }
+          .doc-cell-red { background: #ffe3e3 !important; }
+          .doc-cell-blue { background: #dbeafe !important; }
+          .doc-cell-middle { vertical-align: middle !important; }
+        `,
         browser_spellcheck: true,
         contextmenu: 'link image table',
         promotion: false,

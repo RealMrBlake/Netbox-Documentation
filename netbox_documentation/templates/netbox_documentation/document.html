@@ -34,6 +34,21 @@
     .documentation-content tbody tr:nth-child(even) td {
       background: color-mix(in srgb, var(--tblr-bg-surface-secondary, #f1f3f5) 45%, transparent);
     }
+    .documentation-content table.doc-table-full-width { width: 100% !important; }
+    .documentation-content table.doc-table-compact th,
+    .documentation-content table.doc-table-compact td { min-width: 5rem; padding: .2rem .35rem !important; font-size: .8rem; }
+    .documentation-content table.doc-table-striped tbody tr:nth-child(even) td { background: var(--tblr-bg-surface-secondary, #f1f3f5); }
+    .documentation-content table.doc-table-header-blue thead th { background: #206bc4 !important; color: #fff; }
+    .documentation-content table.doc-table-header-green thead th { background: #2b8a3e !important; color: #fff; }
+    .documentation-content table.doc-table-header-dark thead th { background: #343a40 !important; color: #fff; }
+    .documentation-content table.doc-table-borderless,
+    .documentation-content table.doc-table-borderless th,
+    .documentation-content table.doc-table-borderless td { border: 0 !important; }
+    .documentation-content .doc-cell-yellow { background: #fff3bf !important; color: #212529; }
+    .documentation-content .doc-cell-green { background: #d3f9d8 !important; color: #212529; }
+    .documentation-content .doc-cell-red { background: #ffe3e3 !important; color: #212529; }
+    .documentation-content .doc-cell-blue { background: #dbeafe !important; color: #212529; }
+    .documentation-content .doc-cell-middle { vertical-align: middle !important; }
     .documentation-content p { max-width: 90rem; }
     #documentation-viewer:fullscreen {
       width: 100%;
