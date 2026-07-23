@@ -204,8 +204,14 @@ def _excel_color(color, workbook):
 
 def _excel_cell_style(cell, workbook):
     declarations = []
-    if cell.fill and cell.fill.fill_type == "solid":
-        fill = _excel_color(cell.fill.fgColor, workbook)
+    if cell.fill and cell.fill.fill_type:
+        fill = (
+            _excel_color(getattr(cell.fill, "fgColor", None), workbook) or
+            _excel_color(getattr(cell.fill, "bgColor", None), workbook)
+        )
+        if not fill and cell.fill.fill_type == "linear":
+            stops = getattr(cell.fill, "stop", ())
+            fill = _excel_color(stops[0].color, workbook) if stops else None
         if fill:
             declarations.append(f"background-color: {fill}")
     font_color = _excel_color(cell.font.color, workbook)
@@ -226,6 +232,52 @@ def _excel_cell_style(cell, workbook):
     return "; ".join(declarations)
 
 
+def _tint_hex(value, tint):
+    import colorsys
+    rgb = tuple(int(value[index:index + 2], 16) / 255 for index in (1, 3, 5))
+    hue, lightness, saturation = colorsys.rgb_to_hls(*rgb)
+    lightness = lightness * (1 + tint) if tint < 0 else lightness + (1 - lightness) * tint
+    tinted = colorsys.hls_to_rgb(hue, max(0, min(1, lightness)), saturation)
+    return "#" + "".join(f"{round(component * 255):02x}" for component in tinted)
+
+
+def _excel_table_cell_styles(sheet, workbook, max_row, max_column):
+    """Create visual fallbacks for Excel's built-in 'Format as Table' styles."""
+    from openpyxl.styles import Color
+    from openpyxl.utils.cell import range_boundaries
+
+    styles = {}
+    for table in sheet.tables.values():
+        info = table.tableStyleInfo
+        match = re.fullmatch(r"TableStyle(Light|Medium|Dark)(\d+)", info.name or "") if info else None
+        if not match:
+            continue
+        family, number = match.group(1), int(match.group(2))
+        palette_slot = (number - 1) % 7
+        theme_index = 0 if palette_slot == 0 else 3 + palette_slot
+        base = _excel_color(Color(theme=theme_index), workbook) or "#4472c4"
+        min_col, min_row, table_max_col, table_max_row = range_boundaries(table.ref)
+        table_max_col, table_max_row = min(table_max_col, max_column), min(table_max_row, max_row)
+        if min_col > table_max_col or min_row > table_max_row:
+            continue
+        header_fill = _tint_hex(base, 0.55) if family == "Light" else base
+        header_color = "#000000" if family == "Light" else "#ffffff"
+        stripe_fill = _tint_hex(base, 0.88 if family == "Light" else 0.82)
+        for column in range(min_col, table_max_col + 1):
+            styles[(min_row, column)] = f"background-color: {header_fill}; color: {header_color}; font-weight: bold"
+        data_start = min_row + (1 if table.headerRowCount else 0)
+        data_end = table_max_row - (1 if table.totalsRowShown else 0)
+        if info.showRowStripes:
+            for row in range(data_start, data_end + 1):
+                if (row - data_start) % 2 == 1:
+                    for column in range(min_col, table_max_col + 1):
+                        styles[(row, column)] = f"background-color: {stripe_fill}"
+        if table.totalsRowShown and table_max_row >= min_row:
+            for column in range(min_col, table_max_col + 1):
+                styles[(table_max_row, column)] = f"font-weight: bold; border-top: 2px solid {base}"
+    return styles
+
+
 def _render_excel_worksheet_html(sheet, workbook, max_rows=None):
     """Render worksheet values and the most relevant visual Excel cell formatting."""
     from openpyxl.utils import get_column_letter
@@ -240,6 +292,7 @@ def _render_excel_worksheet_html(sheet, workbook, max_rows=None):
         return "<p><em>Keine Inhalte</em></p>"
     max_row = min(last_row, max_rows) if max_rows else last_row
     max_column = last_column
+    table_styles = _excel_table_cell_styles(sheet, workbook, max_row, max_column)
     merged_starts, merged_children = {}, set()
     for merged in sheet.merged_cells.ranges:
         if merged.min_row > max_row or merged.min_col > max_column:
@@ -273,6 +326,10 @@ def _render_excel_worksheet_html(sheet, workbook, max_rows=None):
             if colspan > 1:
                 attributes.append(f'colspan="{colspan}"')
             style = _excel_cell_style(cell, workbook)
+            if not style and (row, column) in table_styles:
+                style = table_styles[(row, column)]
+            elif (row, column) in table_styles and "background-color" not in style:
+                style = "; ".join(filter(None, (style, table_styles[(row, column)])))
             if style:
                 attributes.append(f'style="{style}"')
             value = "" if cell.value is None else escape(str(cell.value)).replace("\n", "<br>")

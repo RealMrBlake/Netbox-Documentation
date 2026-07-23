@@ -9,7 +9,7 @@
     .excel-preview-content { max-height: 32rem; overflow: auto; }
     .excel-preview-content table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: .825rem; }
     .excel-preview-content th, .excel-preview-content td { min-width: 7rem; max-width: 22rem; padding: .3rem .45rem; border: 1px solid var(--tblr-border-color, #adb5bd); vertical-align: top; overflow-wrap: anywhere; }
-    .excel-preview-content th { background: var(--tblr-bg-surface-secondary, #f1f3f5); }
+    .excel-preview-content th:not([style*="background"]) { background: var(--tblr-bg-surface-secondary, #f1f3f5); }
   </style>
 {% endblock head %}
 

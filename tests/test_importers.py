@@ -6,7 +6,7 @@ import sys
 import pytest
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font
-from openpyxl.worksheet.table import Table
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 
 spec = importlib.util.spec_from_file_location(
@@ -63,6 +63,29 @@ def test_xlsx_preserves_cell_fill_and_font_colors_as_html():
     assert "color: #ffffff" in result.markdown
     assert "font-weight: bold" in result.markdown
     assert "background-color: #eaf0dc" in result.markdown
+
+
+def test_xlsx_renders_builtin_excel_table_style_colors_in_preview_html():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["Standort", "Adresse"])
+    sheet.append(["Verwaltung", "10.1.2.17"])
+    sheet.append(["Büro", "10.1.2.18"])
+    table = Table(displayName="Standorte", ref="A1:B3")
+    table.tableStyleInfo = TableStyleInfo(
+        name="TableStyleMedium4", showFirstColumn=False,
+        showLastColumn=False, showRowStripes=True, showColumnStripes=False,
+    )
+    sheet.add_table(table)
+    stream = BytesIO()
+    workbook.save(stream)
+
+    result = import_document(Upload(stream.getvalue(), "tabelle.xlsx"))
+
+    assert result.body_format == "html"
+    assert "Standort" in result.markdown
+    assert result.markdown.count("background-color:") >= 4
+    assert "color: #ffffff" in result.markdown
 
 
 def test_rejects_legacy_excel():
