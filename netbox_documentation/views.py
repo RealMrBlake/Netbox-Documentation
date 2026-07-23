@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 import mimetypes
 import tinymce
+import uuid
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -23,7 +24,7 @@ from .archive import ArchiveFailure, documents_for_categories, export_documents,
 from .importers import ImportFailure, import_document, import_excel_sheets
 from .models import (
     Document, DocumentAssignment, DocumentAttachment, DocumentCategory,
-    ExcelImportPreview,
+    DocumentEditLock, ExcelImportPreview,
 )
 from .tables import DocumentTable, AssignmentTable, DocumentCategoryTable
 
@@ -70,6 +71,98 @@ class DocumentEditView(generic.ObjectEditView):
     queryset = Document.objects.all()
     form = DocumentForm
     template_name = "netbox_documentation/document_edit.html"
+
+    @staticmethod
+    def version_value(document):
+        return str(int(document.last_updated.timestamp() * 1_000_000)) if document.last_updated else "0"
+
+    def editable_document(self, request, pk):
+        return get_object_or_404(Document.objects.restrict(request.user, "change"), pk=pk)
+
+    def acquire_lock(self, request, document):
+        timeout = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("edit_lock_timeout_minutes", 5)
+        expires_before = timezone.now() - timedelta(minutes=timeout)
+        DocumentEditLock.objects.filter(document__isnull=True).delete()
+        with transaction.atomic():
+            lock, created = DocumentEditLock.objects.get_or_create(
+                document=document,
+                defaults={"user": request.user, "token": uuid.uuid4()},
+            )
+            if not created:
+                lock = DocumentEditLock.objects.select_for_update().get(pk=lock.pk)
+                if lock.user_id != request.user.pk and lock.heartbeat >= expires_before:
+                    return None, lock
+                if lock.user_id != request.user.pk or lock.heartbeat < expires_before:
+                    lock.user = request.user
+                    lock.token = uuid.uuid4()
+                    lock.acquired = timezone.now()
+                lock.heartbeat = timezone.now()
+                lock.save(update_fields=("user", "token", "acquired", "heartbeat"))
+            return lock, None
+
+    def get(self, request, *args, **kwargs):
+        if "pk" not in kwargs:
+            return super().get(request, *args, **kwargs)
+        document = self.editable_document(request, kwargs["pk"])
+        lock, blocked_by = self.acquire_lock(request, document)
+        if blocked_by:
+            return render(request, "netbox_documentation/document_locked.html", {
+                "object": document, "lock": blocked_by,
+                "timeout": settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("edit_lock_timeout_minutes", 5),
+            }, status=423)
+        initial = request.GET.copy()
+        initial["edit_lock_token"] = str(lock.token)
+        initial["expected_version"] = self.version_value(document)
+        request.GET = initial
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        if "pk" not in kwargs:
+            return super().post(request, *args, **kwargs)
+        document = self.editable_document(request, kwargs["pk"])
+        token = request.POST.get("edit_lock_token")
+        try:
+            token_value = uuid.UUID(token or "")
+        except (ValueError, TypeError, AttributeError):
+            token_value = None
+        lock = DocumentEditLock.objects.filter(document=document, user=request.user, token=token_value).first() if token_value else None
+        if not lock:
+            return render(request, "netbox_documentation/document_locked.html", {
+                "object": document, "lock": getattr(document, "edit_lock", None),
+                "timeout": settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("edit_lock_timeout_minutes", 5),
+                "lost": True,
+            }, status=409)
+        if request.POST.get("expected_version") != self.version_value(document):
+            DocumentEditLock.objects.filter(pk=lock.pk).delete()
+            return render(request, "netbox_documentation/document_edit_conflict.html", {
+                "object": document,
+                "submitted_title": request.POST.get("title", ""),
+                "submitted_body": request.POST.get("body", ""),
+            }, status=409)
+        response = super().post(request, *args, **kwargs)
+        if 300 <= response.status_code < 400 or response.headers.get("HX-Location"):
+            DocumentEditLock.objects.filter(pk=lock.pk, token=token).delete()
+        return response
+
+
+class DocumentLockView(PermissionRequiredMixin, View):
+    permission_required = "netbox_documentation.change_document"
+
+    def post(self, request, pk):
+        document = get_object_or_404(Document.objects.restrict(request.user, "change"), pk=pk)
+        token = request.POST.get("token")
+        try:
+            token_value = uuid.UUID(token or "")
+        except (ValueError, TypeError, AttributeError):
+            return JsonResponse({"error": "Ungültige Bearbeitungssperre."}, status=400)
+        lock = DocumentEditLock.objects.filter(document=document, user=request.user, token=token_value)
+        if request.POST.get("action") == "release":
+            deleted, _ = lock.delete()
+            return JsonResponse({"released": bool(deleted)})
+        updated = lock.update(heartbeat=timezone.now())
+        if not updated:
+            return JsonResponse({"error": "Bearbeitungssperre ist nicht mehr gültig."}, status=409)
+        return JsonResponse({"ok": True})
 
 
 class DocumentDeleteView(generic.ObjectDeleteView):

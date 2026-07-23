@@ -17,6 +17,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 - Tabellen-Presets, farbige Kopfzeilen und Zellhervorhebungen im WYSIWYG-Editor
 - Excel-Mehrblattimport: je Arbeitsblatt eine Dokumentation in einem gewählten Zielordner
 - Zweistufige Excel-Vorschau mit Blattauswahl und frei änderbaren Dokumenttiteln
+- Benutzergebundene Bearbeitungssperren mit Heartbeat und zusätzlicher Versionskonfliktprüfung
 - Optionales Glätten von Excel-Tabellen in kompakte Feld-/Wert-Textblöcke
 - Eine Dokumentation mehreren Objekten zuordnen und umgekehrt
 - Unbegrenzt viele Objektzuordnungen pro Dokumentation; nur identische Doppelzuordnungen werden verhindert
@@ -28,7 +29,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.7.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.8.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 
@@ -77,6 +78,7 @@ PLUGINS_CONFIG = {
     "netbox_documentation": {
         "max_import_size_mb": 25,
         "max_archive_size_mb": 250,
+        "edit_lock_timeout_minutes": 5,
         "keep_imported_file": True,
         "allowed_object_types": [
             "dcim.region",
@@ -91,6 +93,12 @@ PLUGINS_CONFIG = {
     }
 }
 ```
+
+### Gleichzeitiges Bearbeiten
+
+Beim Öffnen einer bestehenden Dokumentation im Editor wird eine benutzergebundene Bearbeitungssperre gesetzt und während der Arbeit regelmäßig verlängert. Andere Benutzer sehen den aktiven Bearbeiter und können erst nach Freigabe oder Ablauf der Sperre in den Editor wechseln. `edit_lock_timeout_minutes` bestimmt die Zeit ohne Heartbeat, nach der eine abgebrochene Sitzung automatisch übernommen werden darf.
+
+Zusätzlich wird beim Speichern die ursprünglich geöffnete Version mit dem aktuellen Datenbankstand verglichen. Wurde die Dokumentation zwischenzeitlich verändert, bricht das Plugin den Speichervorgang ab, zeigt den nicht gespeicherten Inhalt zum Kopieren an und überschreibt die neuere Fassung nicht.
 
 TinyMCE wird als Python-Abhängigkeit des Plugins installiert und über einen lokalen, gecachten Plugin-Endpunkt bereitgestellt. `collectstatic` übernimmt die Dateien zusätzlich in NetBox. Der Editor benötigt deshalb weder Zugriff auf ein CDN noch einen API-Key. Das verwendete TinyMCE wird im GPL-Modus betrieben. Kann das Script nicht geladen werden, bleibt als Rückfall ein normales HTML-Textfeld verfügbar.
 
