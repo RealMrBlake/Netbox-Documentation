@@ -36,10 +36,10 @@
         plugins: 'advlist anchor autolink charmap code fullscreen image link lists media preview searchreplace table visualblocks wordcount',
         toolbar: [
           'undo redo | blocks styles fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor',
-          'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table link image media | removeformat code netboxfocus fullscreen'
+          'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table tablecellcolor link image media | removeformat code netboxfocus fullscreen'
         ],
         toolbar_mode: 'sliding',
-        table_toolbar: 'tableprops tablecellprops | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol | tablemergecells tablesplitcells | tabledelete',
+        table_toolbar: 'tableprops tablecellprops tablecellcolor | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol | tablemergecells tablesplitcells | tabledelete',
         table_appearance_options: true,
         table_advtab: true,
         table_cell_advtab: true,
@@ -103,7 +103,65 @@
         paste_convert_word_fake_lists: true,
         smart_paste: true,
         images_reuse_filename: true,
-        relative_urls: false
+        relative_urls: false,
+        setup: editor => {
+          const selectedTableCells = () => {
+            const markedCells = Array.from(editor.getBody().querySelectorAll(
+              'td[data-mce-selected="1"], th[data-mce-selected="1"]'
+            ));
+            if (markedCells.length) return markedCells;
+            const currentCell = editor.dom.getParent(editor.selection.getNode(), 'td,th');
+            return currentCell ? [currentCell] : [];
+          };
+          const applyCellColor = color => {
+            const cells = selectedTableCells();
+            if (!cells.length) return;
+            editor.undoManager.transact(() => {
+              cells.forEach(cell => editor.dom.setStyle(cell, 'background-color', color));
+            });
+            editor.nodeChanged();
+          };
+          const chooseCellColor = () => {
+            const picker = document.createElement('input');
+            picker.type = 'color';
+            picker.value = '#fff3bf';
+            picker.style.position = 'fixed';
+            picker.style.opacity = '0';
+            picker.addEventListener('input', () => applyCellColor(picker.value), {once: true});
+            picker.addEventListener('change', () => picker.remove(), {once: true});
+            document.body.appendChild(picker);
+            picker.click();
+          };
+          const palette = [
+            ['Gelb', '#fff3bf'], ['Grün', '#d3f9d8'], ['Blau', '#dbeafe'],
+            ['Rot', '#ffe3e3'], ['Orange', '#ffe8cc'], ['Grau', '#e9ecef'],
+            ['Dunkelgrün', '#a5bf60'], ['Dunkelblau', '#206bc4'], ['Dunkelgrau', '#343a40']
+          ];
+          editor.ui.registry.addMenuButton('tablecellcolor', {
+            icon: 'highlight-bg-color',
+            tooltip: 'Farbeimer für Tabellenzellen',
+            fetch: callback => callback([
+              ...palette.map(([name, color]) => ({
+                type: 'menuitem',
+                text: name,
+                onAction: () => applyCellColor(color)
+              })),
+              {type: 'separator'},
+              {type: 'menuitem', text: 'Eigene Farbe …', onAction: chooseCellColor},
+              {type: 'menuitem', text: 'Zellfarbe entfernen', onAction: () => applyCellColor('')}
+            ])
+          });
+          editor.ui.registry.addToggleButton('netboxfocus', {
+            icon: 'expand',
+            tooltip: 'Fokusmodus im NetBox-Fenster',
+            onAction: api => {
+              const active = document.body.classList.toggle('documentation-editor-focus');
+              const container = editor.getContainer();
+              container.style.height = active ? 'calc(100vh - 190px)' : '650px';
+              api.setActive(active);
+            }
+          });
+        }
         {% if object.pk %},
         images_file_types: 'jpg,jpeg,png,gif,webp',
         automatic_uploads: true,
@@ -121,19 +179,7 @@
             resolve(payload.location);
           }).catch(error => reject(error.message));
         })
-        {% endif %},
-        setup: (editor) => {
-          editor.ui.registry.addToggleButton('netboxfocus', {
-            icon: 'expand',
-            tooltip: 'Fokusmodus im NetBox-Fenster',
-            onAction: api => {
-              const active = document.body.classList.toggle('documentation-editor-focus');
-              const container = editor.getContainer();
-              container.style.height = active ? 'calc(100vh - 190px)' : '650px';
-              api.setActive(active);
-            }
-          });
-        }
+        {% endif %}
       });
     });
   </script>
