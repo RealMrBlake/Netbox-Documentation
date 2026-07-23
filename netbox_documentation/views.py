@@ -1,5 +1,6 @@
 from pathlib import Path
 from datetime import timedelta
+from html import escape
 import mimetypes
 import tinymce
 from django.conf import settings
@@ -168,7 +169,9 @@ class DocumentImportView(PermissionRequiredMixin, View):
                 while Document.objects.filter(slug=slug).exists():
                     slug = f"{base_slug}-{counter}"
                     counter += 1
-                document = Document.objects.create(title=title, slug=slug, body=result.markdown, body_format="markdown")
+                document = Document.objects.create(
+                    title=title, slug=slug, body=result.markdown, body_format=result.body_format,
+                )
             keep = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("keep_imported_file", True)
             if keep:
                 upload.seek(0)
@@ -219,11 +222,18 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
         for form, sheet in zip(formset.forms, sheets):
             sample = sheet.markdown
             if sheet.images:
-                sample += f"\n\n## Bilder\n\n_{len(sheet.images)} eingebettete Bilder werden beim Import angefügt._"
+                image_notice = f"{len(sheet.images)} eingebettete Bilder werden beim Import angefügt."
+                if sheet.body_format == "html":
+                    sample += f"\n<h2>Bilder</h2><p><em>{image_notice}</em></p>"
+                else:
+                    sample += f"\n\n## Bilder\n\n_{image_notice}_"
             truncated = len(sample) > 100000
             if truncated:
-                sample = sample[:100000] + "\n\n_… Vorschau gekürzt …_"
-            preview_document = Document(body=sample, body_format="markdown")
+                notice = "… Vorschau gekürzt …"
+                sample = sample[:100000] + (
+                    f"<p><em>{notice}</em></p>" if sheet.body_format == "html" else f"\n\n_{notice}_"
+                )
+            preview_document = Document(body=sample, body_format=sheet.body_format)
             items.append({
                 "form": form, "sheet": sheet,
                 "preview_html": preview_document.rendered_body(), "truncated": truncated,
@@ -300,7 +310,7 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                 counter += 1
             document = Document.objects.create(
                 title=title[:200], slug=document_slug, body=sheet.markdown,
-                body_format="markdown", category=preview.category,
+                body_format=sheet.body_format, category=preview.category,
                 summary=f"Importiert aus {preview.original_name}",
             )
             if sheet.images:
@@ -313,8 +323,16 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                     attachment.file.save(image.name, ContentFile(image.content), save=False)
                     attachment.save()
                     location = f" ({image.cell})" if image.cell else ""
-                    image_lines.append(f"![{image.name}{location}]({attachment.file.url})")
-                document.body += "\n\n## Bilder\n\n" + "\n\n".join(image_lines)
+                    if document.body_format == "html":
+                        image_lines.append(
+                            f'<p><img src="{escape(attachment.file.url)}" alt="{escape(image.name + location)}"></p>'
+                        )
+                    else:
+                        image_lines.append(f"![{image.name}{location}]({attachment.file.url})")
+                if document.body_format == "html":
+                    document.body += "\n<h2>Bilder</h2>\n" + "\n".join(image_lines)
+                else:
+                    document.body += "\n\n## Bilder\n\n" + "\n\n".join(image_lines)
                 document.save(update_fields=("body", "last_updated"))
                 image_count += len(sheet.images)
             created_documents.append(document)

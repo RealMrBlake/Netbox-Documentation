@@ -5,6 +5,7 @@ import sys
 
 import pytest
 from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font
 from openpyxl.worksheet.table import Table
 
 
@@ -39,8 +40,29 @@ def test_xlsx_imports_sheets_as_tables():
     stream = BytesIO()
     workbook.save(stream)
     result = import_document(Upload(stream.getvalue(), "server.xlsx"))
-    assert "## Server" in result.markdown
+    assert "<h2>Server</h2>" in result.markdown
+    assert result.body_format == "html"
     assert "web01" in result.markdown
+
+
+def test_xlsx_preserves_cell_fill_and_font_colors_as_html():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "Standort"
+    sheet["A1"].fill = PatternFill(fill_type="solid", fgColor="A5BF60")
+    sheet["A1"].font = Font(color="FFFFFF", bold=True)
+    sheet["A2"] = "Verwaltung"
+    sheet["A2"].fill = PatternFill(fill_type="solid", fgColor="EAF0DC")
+    stream = BytesIO()
+    workbook.save(stream)
+
+    result = import_document(Upload(stream.getvalue(), "farben.xlsx"))
+
+    assert result.body_format == "html"
+    assert "background-color: #a5bf60" in result.markdown
+    assert "color: #ffffff" in result.markdown
+    assert "font-weight: bold" in result.markdown
+    assert "background-color: #eaf0dc" in result.markdown
 
 
 def test_rejects_legacy_excel():

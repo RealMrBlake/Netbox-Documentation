@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
+from html import escape
 import re
 
 
@@ -12,6 +13,7 @@ class ImportFailure(ValueError):
 class ImportResult:
     markdown: str
     warnings: list[str] = field(default_factory=list)
+    body_format: str = "markdown"
 
 
 @dataclass
@@ -27,6 +29,7 @@ class ExcelSheetResult:
     title: str
     markdown: str
     images: list[ImportedImage] = field(default_factory=list)
+    body_format: str = "markdown"
 
 
 def import_document(upload, flatten_excel=False) -> ImportResult:
@@ -80,7 +83,7 @@ def _escape_markdown_text(value):
 
 def _xlsx(content, flatten=False):
     from openpyxl import load_workbook
-    workbook = load_workbook(BytesIO(content), read_only=not flatten, data_only=True)
+    workbook = load_workbook(BytesIO(content), read_only=False, data_only=True)
     sections = []
     for sheet in workbook.worksheets:
         rows = [["" if cell is None else str(cell) for cell in row] for row in sheet.iter_rows(values_only=True)]
@@ -88,11 +91,11 @@ def _xlsx(content, flatten=False):
             rows.pop()
         if not rows:
             continue
-        rendered = _render_flattened_worksheet(sheet) if flatten else _render_excel_rows(rows)
-        sections.append(f"## {sheet.title}\n\n{rendered}")
+        rendered = _render_flattened_worksheet(sheet) if flatten else _render_excel_worksheet_html(sheet, workbook)
+        sections.append(f"## {sheet.title}\n\n{rendered}" if flatten else f"<h2>{escape(sheet.title)}</h2>\n{rendered}")
     if not sections:
         raise ImportFailure("Die Arbeitsmappe enthält keine Daten.")
-    return ImportResult("\n\n".join(sections))
+    return ImportResult("\n\n".join(sections), body_format="markdown" if flatten else "html")
 
 
 def import_excel_sheets(upload, flatten=False) -> list[ExcelSheetResult]:
@@ -132,10 +135,13 @@ def import_excel_sheets(upload, flatten=False) -> list[ExcelSheetResult]:
         if not rows and not images:
             continue
         if rows:
-            markdown = _render_flattened_worksheet(sheet) if flatten else _render_excel_rows(rows)
+            markdown = _render_flattened_worksheet(sheet) if flatten else _render_excel_worksheet_html(sheet, workbook)
         else:
             markdown = ""
-        results.append(ExcelSheetResult(title=sheet.title, markdown=markdown, images=images))
+        results.append(ExcelSheetResult(
+            title=sheet.title, markdown=markdown, images=images,
+            body_format="markdown" if flatten else "html",
+        ))
     if not results:
         raise ImportFailure("Die Arbeitsmappe enthält keine Daten oder unterstützten Bilder.")
     return results
@@ -144,6 +150,113 @@ def import_excel_sheets(upload, flatten=False) -> list[ExcelSheetResult]:
 def slugify_filename(value):
     value = re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip("-.")
     return value[:80] or "arbeitsblatt"
+
+
+def _excel_color(color, workbook):
+    """Resolve RGB, indexed and theme-based openpyxl colors to a CSS hex value."""
+    if not color or not getattr(color, "type", None):
+        return None
+    value = None
+    if color.type == "rgb" and color.rgb:
+        value = str(color.rgb)[-6:]
+    elif color.type == "indexed" and color.indexed is not None:
+        from openpyxl.styles.colors import COLOR_INDEX
+        index = int(color.indexed)
+        if 0 <= index < len(COLOR_INDEX):
+            value = COLOR_INDEX[index][-6:]
+    elif color.type == "theme" and color.theme is not None and workbook.loaded_theme:
+        from xml.etree import ElementTree
+        try:
+            root = ElementTree.fromstring(workbook.loaded_theme)
+            scheme = root.find(".//{http://schemas.openxmlformats.org/drawingml/2006/main}clrScheme")
+            entries = list(scheme) if scheme is not None else []
+            entry = entries[int(color.theme)]
+            color_node = next(iter(entry))
+            value = color_node.attrib.get("val") or color_node.attrib.get("lastClr")
+        except (ElementTree.ParseError, IndexError, StopIteration, TypeError, ValueError):
+            value = None
+    if not value or not re.fullmatch(r"[0-9A-Fa-f]{6}", value):
+        return None
+    rgb = [int(value[index:index + 2], 16) for index in (0, 2, 4)]
+    tint = float(getattr(color, "tint", 0) or 0)
+    if tint:
+        rgb = [round(component * (1 + tint) if tint < 0 else component + (255 - component) * tint) for component in rgb]
+    return "#" + "".join(f"{max(0, min(255, component)):02x}" for component in rgb)
+
+
+def _excel_cell_style(cell, workbook):
+    declarations = []
+    if cell.fill and cell.fill.fill_type == "solid":
+        fill = _excel_color(cell.fill.fgColor, workbook)
+        if fill:
+            declarations.append(f"background-color: {fill}")
+    font_color = _excel_color(cell.font.color, workbook)
+    if font_color:
+        declarations.append(f"color: {font_color}")
+    if cell.font.bold:
+        declarations.append("font-weight: bold")
+    if cell.font.italic:
+        declarations.append("font-style: italic")
+    if cell.font.sz:
+        declarations.append(f"font-size: {float(cell.font.sz):g}pt")
+    if cell.alignment.horizontal in {"left", "center", "right", "justify"}:
+        declarations.append(f"text-align: {cell.alignment.horizontal}")
+    if cell.alignment.vertical in {"top", "center", "bottom"}:
+        declarations.append(f"vertical-align: {'middle' if cell.alignment.vertical == 'center' else cell.alignment.vertical}")
+    if cell.alignment.wrap_text:
+        declarations.append("white-space: normal")
+    return "; ".join(declarations)
+
+
+def _render_excel_worksheet_html(sheet, workbook):
+    """Render worksheet values and the most relevant visual Excel cell formatting."""
+    from openpyxl.utils import get_column_letter
+
+    populated = [cell for row in sheet.iter_rows() for cell in row if cell.value not in (None, "")]
+    if not populated:
+        return "<p><em>Keine Inhalte</em></p>"
+    max_row = max(cell.row for cell in populated)
+    max_column = max(cell.column for cell in populated)
+    merged_starts, merged_children = {}, set()
+    for merged in sheet.merged_cells.ranges:
+        if merged.min_row > max_row or merged.min_col > max_column:
+            continue
+        merged_starts[(merged.min_row, merged.min_col)] = (
+            min(merged.max_row, max_row) - merged.min_row + 1,
+            min(merged.max_col, max_column) - merged.min_col + 1,
+        )
+        for row in range(merged.min_row, min(merged.max_row, max_row) + 1):
+            for column in range(merged.min_col, min(merged.max_col, max_column) + 1):
+                if (row, column) != (merged.min_row, merged.min_col):
+                    merged_children.add((row, column))
+    columns = []
+    for column in range(1, max_column + 1):
+        width = sheet.column_dimensions[get_column_letter(column)].width
+        columns.append(f'<col style="width: {max(3, min(float(width or 13), 80)):.2f}ch">')
+    output = ['<table class="doc-table-bordered"><colgroup>', *columns, "</colgroup><tbody>"]
+    for row in range(1, max_row + 1):
+        row_style = ""
+        if sheet.row_dimensions[row].height:
+            row_style = f' style="height: {float(sheet.row_dimensions[row].height):g}pt"'
+        output.append(f"<tr{row_style}>")
+        for column in range(1, max_column + 1):
+            if (row, column) in merged_children:
+                continue
+            cell = sheet.cell(row=row, column=column)
+            attributes = []
+            rowspan, colspan = merged_starts.get((row, column), (1, 1))
+            if rowspan > 1:
+                attributes.append(f'rowspan="{rowspan}"')
+            if colspan > 1:
+                attributes.append(f'colspan="{colspan}"')
+            style = _excel_cell_style(cell, workbook)
+            if style:
+                attributes.append(f'style="{style}"')
+            value = "" if cell.value is None else escape(str(cell.value)).replace("\n", "<br>")
+            output.append(f"<td{' ' if attributes else ''}{' '.join(attributes)}>{value}</td>")
+        output.append("</tr>")
+    output.append("</tbody></table>")
+    return "".join(output)
 
 
 def _render_flattened_worksheet(sheet):
