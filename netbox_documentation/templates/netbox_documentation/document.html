@@ -5,32 +5,64 @@
   <style>
     .documentation-content { overflow-x: auto; }
     .documentation-content table {
-      width: auto !important;
-      max-width: 100%;
+      width: max-content !important;
+      min-width: 100%;
+      max-width: none !important;
       table-layout: auto;
+      border-collapse: collapse !important;
+      border: 1px solid var(--tblr-border-color, #adb5bd) !important;
       font-size: .875rem;
       line-height: 1.25;
     }
     .documentation-content th,
     .documentation-content td {
-      min-width: 3rem;
-      max-width: 22rem;
-      padding: .25rem .4rem !important;
+      min-width: 8rem;
+      max-width: 24rem;
+      padding: .4rem .55rem !important;
+      border: 1px solid var(--tblr-border-color, #adb5bd) !important;
       overflow-wrap: anywhere;
       word-break: normal;
       vertical-align: top;
     }
+    .documentation-content th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--tblr-bg-surface-secondary, #f1f3f5) !important;
+      font-weight: 700;
+    }
+    .documentation-content tbody tr:nth-child(even) td {
+      background: color-mix(in srgb, var(--tblr-bg-surface-secondary, #f1f3f5) 45%, transparent);
+    }
     .documentation-content p { max-width: 90rem; }
+    #documentation-viewer:fullscreen {
+      width: 100%;
+      max-width: none;
+      height: 100%;
+      padding: 1.25rem;
+      overflow: auto;
+      background: var(--tblr-body-bg, #fff);
+    }
+    #documentation-viewer:fullscreen .card { min-height: calc(100vh - 2.5rem); }
+    #documentation-viewer:fullscreen .fullscreen-document-title,
+    #documentation-viewer:fullscreen .fullscreen-exit { display: block !important; }
+    .fullscreen-document-title { display: none; margin: 0 4rem 1rem 0; }
+    .fullscreen-exit { display: none; position: fixed; top: 1rem; right: 1rem; z-index: 10; }
   </style>
 {% endblock head %}
 {% block extra_controls %}
+  <button type="button" id="documentation-fullscreen" class="btn btn-outline-secondary">
+    <i class="mdi mdi-fullscreen"></i> Vollbild
+  </button>
   <a href="{% url 'plugins:netbox_documentation:document_print' pk=object.pk %}" target="_blank" class="btn btn-outline-secondary">
     <i class="mdi mdi-printer"></i> Drucken / PDF
   </a>
 {% endblock extra_controls %}
 {% block content %}
 <div class="row">
-  <div class="col col-md-9">
+  <div class="col col-md-9" id="documentation-viewer">
+    <h1 class="fullscreen-document-title">{{ object.title }}</h1>
+    <button type="button" class="btn btn-secondary fullscreen-exit" id="documentation-fullscreen-exit"><i class="mdi mdi-fullscreen-exit"></i> Vollbild beenden</button>
     {% if object.summary %}<p class="lead">{{ object.summary }}</p>{% endif %}
     <div class="card"><div class="card-body rendered-markdown documentation-content">{{ object.rendered_body|safe }}</div></div>
   </div>
@@ -45,3 +77,22 @@
   </div>
 </div>
 {% endblock content %}
+
+{% block javascript %}
+  {{ block.super }}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const viewer = document.getElementById('documentation-viewer');
+      const openButton = document.getElementById('documentation-fullscreen');
+      const closeButton = document.getElementById('documentation-fullscreen-exit');
+      if (!viewer || !openButton || !viewer.requestFullscreen) {
+        if (openButton) openButton.style.display = 'none';
+        return;
+      }
+      openButton.addEventListener('click', () => viewer.requestFullscreen());
+      closeButton.addEventListener('click', () => {
+        if (document.fullscreenElement) document.exitFullscreen();
+      });
+    });
+  </script>
+{% endblock javascript %}
