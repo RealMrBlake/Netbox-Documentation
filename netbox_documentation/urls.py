@@ -8,6 +8,7 @@ urlpatterns = (
     path("documents/add/", views.DocumentEditView.as_view(), name="document_add"),
     path("documents/import/", views.DocumentImportView.as_view(), name="document_import"),
     path("documents/import/", views.DocumentImportView.as_view(), name="document_bulk_import"),
+    path("documents/import/excel/<uuid:token>/", views.ExcelImportPreviewView.as_view(), name="excel_import_preview"),
     path("documents/delete/", views.DocumentBulkDeleteView.as_view(), name="document_bulk_delete"),
     path("archive/", views.DocumentArchiveView.as_view(), name="document_archive"),
     path("documents/<int:pk>/", views.DocumentView.as_view(), name="document"),

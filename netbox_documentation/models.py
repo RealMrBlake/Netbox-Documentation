@@ -1,7 +1,10 @@
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.conf import settings
 from django.urls import reverse
+from pathlib import Path
+import uuid
 from netbox.models import NetBoxModel
 
 
@@ -141,3 +144,28 @@ class DocumentAttachment(NetBoxModel):
         # have no standalone detail view. This is also used by NetBox's delete
         # dependency collector when rendering the confirmation dialog.
         return self.document.get_absolute_url()
+
+
+def preview_upload_path(instance, filename):
+    return f"netbox_documentation/import-previews/{instance.pk}/{Path(filename).name}"
+
+
+class ExcelImportPreview(models.Model):
+    """Short-lived, user-bound state for the two-step Excel import workflow."""
+    _netbox_private = True
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    category = models.ForeignKey(DocumentCategory, on_delete=models.SET_NULL, null=True)
+    file = models.FileField(upload_to=preview_upload_path)
+    original_name = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=100, blank=True)
+    flatten = models.BooleanField(default=False)
+    sheet_metadata = models.JSONField(default=list)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created",)
+
+    def __str__(self):
+        return self.original_name

@@ -201,3 +201,39 @@ class ArchiveImportForm(forms.Form):
         if upload.size > limit * 1024 * 1024:
             raise forms.ValidationError(f"Das Archiv ist größer als {limit} MB.")
         return upload
+
+
+class ExcelSheetSelectionForm(forms.Form):
+    include = forms.BooleanField(
+        required=False, initial=True, label="Importieren",
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+    )
+    index = forms.IntegerField(widget=forms.HiddenInput())
+    title = forms.CharField(
+        max_length=200, required=False, label="Dokumenttitel",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+
+    def clean(self):
+        data = super().clean()
+        if data.get("include") and not (data.get("title") or "").strip():
+            self.add_error("title", "Für ein ausgewähltes Arbeitsblatt ist ein Titel erforderlich.")
+        return data
+
+
+class BaseExcelSheetSelectionFormSet(forms.BaseFormSet):
+    def clean(self):
+        super().clean()
+        if any(form.errors for form in self.forms):
+            return
+        selected = [form.cleaned_data for form in self.forms if form.cleaned_data.get("include")]
+        if not selected:
+            raise forms.ValidationError("Bitte mindestens ein Arbeitsblatt auswählen.")
+        indices = [item["index"] for item in selected]
+        if len(indices) != len(set(indices)):
+            raise forms.ValidationError("Die Arbeitsblattauswahl ist ungültig.")
+
+
+ExcelSheetSelectionFormSet = forms.formset_factory(
+    ExcelSheetSelectionForm, formset=BaseExcelSheetSelectionFormSet, extra=0
+)

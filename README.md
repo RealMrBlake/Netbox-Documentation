@@ -16,6 +16,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 - Lesbare Tabellen mit vollständigen Zellrahmen und horizontalem Inhalts-Scrolling
 - Tabellen-Presets, farbige Kopfzeilen und Zellhervorhebungen im WYSIWYG-Editor
 - Excel-Mehrblattimport: je Arbeitsblatt eine Dokumentation in einem gewählten Zielordner
+- Zweistufige Excel-Vorschau mit Blattauswahl und frei änderbaren Dokumenttiteln
 - Optionales Glätten von Excel-Tabellen in kompakte Feld-/Wert-Textblöcke
 - Eine Dokumentation mehreren Objekten zuordnen und umgekehrt
 - Unbegrenzt viele Objektzuordnungen pro Dokumentation; nur identische Doppelzuordnungen werden verhindert
@@ -27,7 +28,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.6.1` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.7.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 
@@ -127,6 +128,8 @@ Objektbezogene NetBox-Constraints sollten zusätzlich passend zu Mandanten und V
 Alte binäre `.doc`- und `.xls`-Dateien müssen vorher in `.docx` bzw. `.xlsx` konvertiert werden. Gescannte PDFs benötigen OCR, die in dieser Version bewusst noch nicht enthalten ist. Komplexe Word-/PDF-Layouts, eingebettete Bilder und Excel-Formatierungen können nicht verlustfrei nach Markdown übertragen werden.
 
 Für große Excel-Dateien kann auf der Importseite **„Excel mit mehreren Arbeitsblättern – je Blatt eine Dokumentation“** aktiviert werden. Dazu ist ein Zielordner verpflichtend. Jedes nicht leere Arbeitsblatt wird als eigene Dokumentation mit dem Blattnamen als Titel angelegt und erhält eine eigene Kopie der Original-Exceldatei als Anhang. Normale eingebettete PNG-, JPEG-, GIF- und WebP-Bilder werden dem jeweiligen Dokument als Medienanhang hinzugefügt. Diagramme, SmartArt, Steuerelemente und extern verknüpfte Bilder können nicht zuverlässig übernommen werden.
+
+Vor dem Anlegen erscheint eine Vorschauseite mit allen erkannten Arbeitsblättern. Dort können einzelne Blätter abgewählt, die zukünftigen Dokumenttitel geändert und die jeweils erzeugte Dokumentation aufgeklappt werden. Erst die abschließende Bestätigung schreibt Dokumentationen und Anhänge in die Datenbank. Nicht bestätigte Vorschauen sind an den Benutzer gebunden und werden nach 24 Stunden bereinigt.
 
 Mit **„Excel-Tabellen glätten“** werden normale Zellen ohne künstliche Datensatz- oder Feldbezeichnungen in ihrer Lesereihenfolge übernommen. Zellen einer Excel-Zeile erscheinen als einzelne Textzeilen eines Absatzes; zwischen Excel-Zeilen wird ein Absatz eingefügt. Bereiche, die in Excel ausdrücklich über **Einfügen → Tabelle** als strukturierte Tabelle gekennzeichnet wurden, bleiben dagegen als Tabelle erhalten. Rein optisch mit Rahmen oder Farben formatierte Bereiche gelten nicht als Tabelle. Nicht geglättete Tabellen werden in der Dokumentansicht automatisch kompakt dargestellt und bei Bedarf innerhalb des Inhalts horizontal scrollbar, ohne das NetBox-Layout zu verbreitern.
 

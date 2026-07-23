@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import timedelta
 import mimetypes
 import tinymce
 from django.conf import settings
@@ -9,17 +10,21 @@ from django.db import transaction
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
+from django.utils import timezone
 from django.views import View
 from netbox.views import generic
 from netbox.object_actions import AddObject, BulkDelete, BulkImport
 from .filtersets import DocumentFilterSet, AssignmentFilterSet, DocumentCategoryFilterSet
 from .forms import (
     ArchiveExportForm, ArchiveImportForm, AssignmentForm, DocumentCategoryForm,
-    DocumentForm, ImportForm,
+    DocumentForm, ExcelSheetSelectionFormSet, ImportForm,
 )
 from .archive import ArchiveFailure, documents_for_categories, export_documents, import_archive
 from .importers import ImportFailure, import_document, import_excel_sheets
-from .models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
+from .models import (
+    Document, DocumentAssignment, DocumentAttachment, DocumentCategory,
+    ExcelImportPreview,
+)
 from .tables import DocumentTable, AssignmentTable, DocumentCategoryTable
 
 
@@ -175,58 +180,158 @@ class DocumentImportView(PermissionRequiredMixin, View):
         return redirect(document)
 
     def _import_excel_sheets(self, request, form, upload):
-        from django.core.files.base import ContentFile
         try:
             sheets = import_excel_sheets(upload, flatten=form.cleaned_data.get("flatten_excel_tables", False))
         except (ImportFailure, Exception) as exc:
             form.add_error("file", f"Excel-Mehrblattimport fehlgeschlagen: {exc}")
             return render(request, self.template_name, {"form": form})
-        category = form.cleaned_data["category"]
-        created_documents = []
+        # Remove abandoned previews owned by this user before creating a new one.
+        stale = ExcelImportPreview.objects.filter(created__lt=timezone.now() - timedelta(hours=24))
+        for preview in stale:
+            preview.file.delete(save=False)
+            preview.delete()
         upload.seek(0)
-        original_content = upload.read()
-        upload.seek(0)
-        with transaction.atomic():
-            for sheet in sheets:
-                base_slug = slugify(sheet.title)[:180] or "arbeitsblatt"
-                document_slug, counter = base_slug, 2
-                while Document.objects.filter(slug=document_slug).exists():
-                    document_slug = f"{base_slug[:190-len(str(counter))]}-{counter}"
-                    counter += 1
-                document = Document.objects.create(
-                    title=sheet.title[:200], slug=document_slug, body=sheet.markdown,
-                    body_format="markdown", category=category,
-                    summary=f"Importiert aus {upload.name}",
-                )
-                if sheet.images:
-                    image_lines = []
-                    for image in sheet.images:
-                        attachment = DocumentAttachment(
-                            document=document, original_name=image.name,
-                            content_type=image.content_type, size=len(image.content),
-                        )
-                        attachment.file.save(image.name, ContentFile(image.content), save=False)
-                        attachment.save()
-                        location = f" ({image.cell})" if image.cell else ""
-                        image_lines.append(f"![{image.name}{location}]({attachment.file.url})")
-                    document.body += "\n\n## Bilder\n\n" + "\n\n".join(image_lines)
-                    document.save(update_fields=("body", "last_updated"))
-                created_documents.append(document)
-            keep = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("keep_imported_file", True)
-            if keep:
-                for document in created_documents:
-                    attachment = DocumentAttachment(
-                        document=document, original_name=upload.name,
-                        content_type=upload.content_type or "", size=len(original_content),
-                    )
-                    attachment.file.save(upload.name, ContentFile(original_content), save=False)
-                    attachment.save()
-        image_count = sum(len(sheet.images) for sheet in sheets)
+        preview = ExcelImportPreview.objects.create(
+            user=request.user, category=form.cleaned_data["category"], file=upload,
+            original_name=upload.name, content_type=upload.content_type or "",
+            flatten=form.cleaned_data.get("flatten_excel_tables", False),
+            sheet_metadata=[{"title": sheet.title, "image_count": len(sheet.images)} for sheet in sheets],
+        )
+        return redirect("plugins:netbox_documentation:excel_import_preview", token=preview.pk)
+
+
+class ExcelImportPreviewView(PermissionRequiredMixin, View):
+    permission_required = "netbox_documentation.import_document"
+    template_name = "netbox_documentation/excel_import_preview.html"
+
+    def get_preview(self, request, token):
+        return get_object_or_404(ExcelImportPreview, pk=token, user=request.user)
+
+    def read_sheets(self, preview):
+        preview.file.open("rb")
+        try:
+            return import_excel_sheets(preview.file, flatten=preview.flatten)
+        finally:
+            preview.file.close()
+
+    def render_preview(self, request, preview, sheets, formset):
+        items = []
+        for form, sheet in zip(formset.forms, sheets):
+            sample = sheet.markdown
+            if sheet.images:
+                sample += f"\n\n## Bilder\n\n_{len(sheet.images)} eingebettete Bilder werden beim Import angefügt._"
+            truncated = len(sample) > 100000
+            if truncated:
+                sample = sample[:100000] + "\n\n_… Vorschau gekürzt …_"
+            preview_document = Document(body=sample, body_format="markdown")
+            items.append({
+                "form": form, "sheet": sheet,
+                "preview_html": preview_document.rendered_body(), "truncated": truncated,
+            })
+        return render(request, self.template_name, {
+            "batch": preview, "formset": formset, "items": items,
+        })
+
+    def get(self, request, token):
+        preview = self.get_preview(request, token)
+        if preview.created < timezone.now() - timedelta(hours=24):
+            self.delete_preview(preview)
+            messages.error(request, "Diese Importvorschau ist abgelaufen. Bitte die Exceldatei erneut hochladen.")
+            return redirect("plugins:netbox_documentation:document_import")
+        try:
+            sheets = self.read_sheets(preview)
+        except (ImportFailure, Exception) as exc:
+            self.delete_preview(preview)
+            messages.error(request, f"Die Excel-Vorschau konnte nicht erzeugt werden: {exc}")
+            return redirect("plugins:netbox_documentation:document_import")
+        initial = [{"include": True, "index": index, "title": sheet.title} for index, sheet in enumerate(sheets)]
+        return self.render_preview(request, preview, sheets, ExcelSheetSelectionFormSet(initial=initial))
+
+    def post(self, request, token):
+        preview = self.get_preview(request, token)
+        if request.POST.get("action") == "cancel":
+            self.delete_preview(preview)
+            messages.info(request, "Excel-Import wurde abgebrochen.")
+            return redirect("plugins:netbox_documentation:document_import")
+        try:
+            sheets = self.read_sheets(preview)
+        except (ImportFailure, Exception) as exc:
+            self.delete_preview(preview)
+            messages.error(request, f"Die Exceldatei konnte nicht erneut gelesen werden: {exc}")
+            return redirect("plugins:netbox_documentation:document_import")
+        formset = ExcelSheetSelectionFormSet(request.POST)
+        if not formset.is_valid():
+            return self.render_preview(request, preview, sheets, formset)
+        if not preview.category:
+            self.delete_preview(preview)
+            messages.error(request, "Der gewählte Zielordner existiert nicht mehr. Bitte den Import erneut starten.")
+            return redirect("plugins:netbox_documentation:document_import")
+        selections = {}
+        for form in formset.forms:
+            data = form.cleaned_data
+            if data.get("include"):
+                if data["index"] < 0 or data["index"] >= len(sheets):
+                    raise PermissionDenied
+                selections[data["index"]] = data["title"].strip()
+        result = self.create_documents(preview, sheets, selections)
+        self.delete_preview(preview)
         messages.success(request, (
-            f"{len(created_documents)} Arbeitsblätter als Dokumentationen in „{category}“ importiert; "
-            f"{image_count} Bilder übernommen."
+            f"{result['documents']} Arbeitsblätter als Dokumentationen in „{result['category']}“ importiert; "
+            f"{result['images']} Bilder übernommen."
         ))
         return redirect("plugins:netbox_documentation:document_list")
+
+    @staticmethod
+    @transaction.atomic
+    def create_documents(preview, sheets, selections):
+        from django.core.files.base import ContentFile
+        preview.file.open("rb")
+        try:
+            original_content = preview.file.read()
+        finally:
+            preview.file.close()
+        created_documents, image_count = [], 0
+        for index, title in selections.items():
+            sheet = sheets[index]
+            base_slug = slugify(title)[:180] or "arbeitsblatt"
+            document_slug, counter = base_slug, 2
+            while Document.objects.filter(slug=document_slug).exists():
+                document_slug = f"{base_slug[:190-len(str(counter))]}-{counter}"
+                counter += 1
+            document = Document.objects.create(
+                title=title[:200], slug=document_slug, body=sheet.markdown,
+                body_format="markdown", category=preview.category,
+                summary=f"Importiert aus {preview.original_name}",
+            )
+            if sheet.images:
+                image_lines = []
+                for image in sheet.images:
+                    attachment = DocumentAttachment(
+                        document=document, original_name=image.name,
+                        content_type=image.content_type, size=len(image.content),
+                    )
+                    attachment.file.save(image.name, ContentFile(image.content), save=False)
+                    attachment.save()
+                    location = f" ({image.cell})" if image.cell else ""
+                    image_lines.append(f"![{image.name}{location}]({attachment.file.url})")
+                document.body += "\n\n## Bilder\n\n" + "\n\n".join(image_lines)
+                document.save(update_fields=("body", "last_updated"))
+                image_count += len(sheet.images)
+            created_documents.append(document)
+        if settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("keep_imported_file", True):
+            for document in created_documents:
+                attachment = DocumentAttachment(
+                    document=document, original_name=preview.original_name,
+                    content_type=preview.content_type, size=len(original_content),
+                )
+                attachment.file.save(preview.original_name, ContentFile(original_content), save=False)
+                attachment.save()
+        return {"documents": len(created_documents), "images": image_count, "category": preview.category}
+
+    @staticmethod
+    def delete_preview(preview):
+        preview.file.delete(save=False)
+        preview.delete()
 
 
 class DocumentMediaUploadView(PermissionRequiredMixin, View):
