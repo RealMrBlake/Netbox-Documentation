@@ -53,7 +53,7 @@ class Document(NetBoxModel):
             "*": ("class", "style"),
         }
         css = CSSSanitizer(allowed_css_properties={
-            "background-color", "border", "border-color", "border-style", "border-width",
+            "background", "background-color", "border", "border-color", "border-style", "border-width",
             "color", "font-family", "font-size", "font-style", "font-weight", "height",
             "border-collapse", "line-height", "list-style-type", "margin", "margin-bottom",
             "margin-left", "margin-right", "margin-top", "padding", "padding-bottom",
