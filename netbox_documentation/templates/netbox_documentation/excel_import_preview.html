@@ -26,6 +26,16 @@
 
 <form method="post">
   {% csrf_token %}
+  {% if overwrite_conflicts %}
+    <input type="hidden" name="confirm_overwrite" value="1">
+    <div class="alert alert-warning mx-0" role="alert">
+      <h3 class="alert-title">Bestehende Dokumentationen aktualisieren?</h3>
+      <p>Die folgenden Dokumentationen existieren bereits im Zielordner. Ihr Inhalt wird überschrieben; bestehende NetBox-Zuordnungen bleiben erhalten:</p>
+      <ul class="mb-0">
+        {% for document in overwrite_conflicts %}<li>{{ document.title }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
   {{ formset.management_form }}
   {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
 
@@ -62,7 +72,10 @@
   <div class="sticky-actions sticky-actions-footer d-print-none" data-sticky-position="full" data-sticky-when="always">
     <div class="btn-list">
       <button type="submit" name="action" value="cancel" class="btn btn-outline-secondary">Abbrechen</button>
-      <button type="submit" name="action" value="confirm" class="btn btn-primary"><i class="mdi mdi-file-import"></i> Ausgewählte Arbeitsblätter importieren</button>
+      <button type="submit" name="action" value="confirm" class="btn {% if overwrite_conflicts %}btn-warning{% else %}btn-primary{% endif %}">
+        <i class="mdi mdi-file-import"></i>
+        {% if overwrite_conflicts %}Überschreiben und importieren{% else %}Ausgewählte Arbeitsblätter importieren{% endif %}
+      </button>
     </div>
   </div>
 </form>

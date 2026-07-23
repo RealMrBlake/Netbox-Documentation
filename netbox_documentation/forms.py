@@ -232,6 +232,9 @@ class BaseExcelSheetSelectionFormSet(forms.BaseFormSet):
         indices = [item["index"] for item in selected]
         if len(indices) != len(set(indices)):
             raise forms.ValidationError("Die Arbeitsblattauswahl ist ungültig.")
+        titles = [item["title"].strip().casefold() for item in selected]
+        if len(titles) != len(set(titles)):
+            raise forms.ValidationError("Ausgewählte Arbeitsblätter dürfen nicht denselben Dokumenttitel haben.")
 
 
 ExcelSheetSelectionFormSet = forms.formset_factory(

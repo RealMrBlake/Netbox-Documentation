@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models import Q
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
@@ -228,7 +229,7 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
         finally:
             preview.file.close()
 
-    def render_preview(self, request, preview, sheets, formset):
+    def render_preview(self, request, preview, sheets, formset, overwrite_conflicts=None):
         items = []
         for form, sheet in zip(formset.forms, sheets):
             sample = sheet.markdown
@@ -251,6 +252,7 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
             })
         return render(request, self.template_name, {
             "batch": preview, "formset": formset, "items": items,
+            "overwrite_conflicts": overwrite_conflicts or [],
         })
 
     def get(self, request, token):
@@ -296,6 +298,29 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                 metadata = preview.sheet_metadata[data["index"]]
                 source_index = metadata.get("source_index", data["index"])
                 selections[source_index] = data["title"].strip()
+        title_query = Q()
+        for title in selections.values():
+            title_query |= Q(title__iexact=title)
+        conflicts = list(Document.objects.filter(
+            title_query, category=preview.category,
+        ).order_by("title"))
+        if conflicts:
+            allowed_ids = set(Document.objects.restrict(request.user, "change").filter(
+                pk__in=[document.pk for document in conflicts]
+            ).values_list("pk", flat=True))
+            if any(document.pk not in allowed_ids for document in conflicts):
+                messages.error(request, "Mindestens eine gleichnamige Dokumentation darf nicht aktualisiert werden.")
+                return redirect("plugins:netbox_documentation:excel_import_preview", token=preview.pk)
+            if request.POST.get("confirm_overwrite") != "1":
+                try:
+                    preview_sheets = self.read_sheets(preview, for_preview=True)
+                except (ImportFailure, Exception) as exc:
+                    messages.error(request, f"Die Bestätigung konnte nicht angezeigt werden: {exc}")
+                    return redirect("plugins:netbox_documentation:excel_import_preview", token=preview.pk)
+                return self.render_preview(
+                    request, preview, preview_sheets, formset,
+                    overwrite_conflicts=conflicts,
+                )
         try:
             selected_sheets = self.read_sheets(preview, selected_indexes=selections)
         except (ImportFailure, Exception) as exc:
@@ -305,7 +330,8 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
         result = self.create_documents(preview, sheets_by_index, selections)
         self.delete_preview(preview)
         messages.success(request, (
-            f"{result['documents']} Arbeitsblätter als Dokumentationen in „{result['category']}“ importiert; "
+            f"{result['documents']} Arbeitsblätter verarbeitet "
+            f"({result['created']} neu, {result['updated']} aktualisiert) in „{result['category']}“; "
             f"{result['images']} Bilder übernommen."
         ))
         return redirect("plugins:netbox_documentation:document_list")
@@ -314,19 +340,31 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
     @transaction.atomic
     def create_documents(preview, sheets, selections):
         from django.core.files.base import ContentFile
-        created_documents, image_count = [], 0
+        created_documents, image_count, created_count, updated_count = [], 0, 0, 0
         for index, title in selections.items():
             sheet = sheets[index]
-            base_slug = slugify(title)[:180] or "arbeitsblatt"
-            document_slug, counter = base_slug, 2
-            while Document.objects.filter(slug=document_slug).exists():
-                document_slug = f"{base_slug[:190-len(str(counter))]}-{counter}"
-                counter += 1
-            document = Document.objects.create(
-                title=title[:200], slug=document_slug, body=sheet.markdown,
-                body_format=sheet.body_format, category=preview.category,
-                summary=f"Importiert aus {preview.original_name}",
-            )
+            document = Document.objects.select_for_update().filter(
+                category=preview.category, title__iexact=title,
+            ).order_by("pk").first()
+            if document:
+                document.title = title[:200]
+                document.body = sheet.markdown
+                document.body_format = sheet.body_format
+                document.summary = f"Importiert aus {preview.original_name}"
+                document.save(update_fields=("title", "body", "body_format", "summary", "last_updated"))
+                updated_count += 1
+            else:
+                base_slug = slugify(title)[:180] or "arbeitsblatt"
+                document_slug, counter = base_slug, 2
+                while Document.objects.filter(slug=document_slug).exists():
+                    document_slug = f"{base_slug[:190-len(str(counter))]}-{counter}"
+                    counter += 1
+                document = Document.objects.create(
+                    title=title[:200], slug=document_slug, body=sheet.markdown,
+                    body_format=sheet.body_format, category=preview.category,
+                    summary=f"Importiert aus {preview.original_name}",
+                )
+                created_count += 1
             if sheet.images:
                 image_lines = []
                 for image in sheet.images:
@@ -362,7 +400,10 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                     attachment.save()
                 finally:
                     preview.file.close()
-        return {"documents": len(created_documents), "images": image_count, "category": preview.category}
+        return {
+            "documents": len(created_documents), "created": created_count,
+            "updated": updated_count, "images": image_count, "category": preview.category,
+        }
 
     @staticmethod
     def delete_preview(preview):
