@@ -12,7 +12,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 - Formatierte Word-Inhalte inklusive Tabellen und unterstützten Zwischenablage-Bildern einfügen
 - Mehrere Dokumentationen mit Ordnern, Zuordnungen und Anhängen als ZIP exportieren und wieder importieren
 - Druckoptimierte A4-Ansicht zum Drucken oder Speichern als PDF
-- Vollbild-Lesemodus für einzelne Dokumentationen
+- Seitenfüllende Großansicht per Schaltfläche oder Klick auf eine Tabelle
 - Lesbare Tabellen mit vollständigen Zellrahmen und horizontalem Inhalts-Scrolling
 - Tabellen-Presets, farbige Kopfzeilen und Zellhervorhebungen im WYSIWYG-Editor
 - Excel-Mehrblattimport: je Arbeitsblatt eine Dokumentation in einem gewählten Zielordner
@@ -27,7 +27,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.6.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.6.1` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 
