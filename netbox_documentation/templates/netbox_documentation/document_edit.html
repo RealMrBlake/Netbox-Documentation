@@ -101,6 +101,30 @@
         paste_convert_word_fake_lists: true,
         smart_paste: true,
         images_reuse_filename: true,
+        file_picker_types: 'image',
+        file_picker_callback: (callback, value, meta) => {
+          if (meta.filetype !== 'image') return;
+          const picker = document.createElement('input');
+          picker.type = 'file';
+          picker.accept = 'image/png,image/jpeg,image/gif,image/webp';
+          picker.addEventListener('change', () => {
+            const file = picker.files && picker.files[0];
+            if (!file) return;
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+              window.alert('Unterstützt werden PNG, JPEG, GIF und WebP.');
+              return;
+            }
+            const reader = new FileReader();
+            reader.addEventListener('load', () => callback(reader.result, {
+              alt: file.name,
+              title: file.name
+            }));
+            reader.addEventListener('error', () => window.alert('Das Bild konnte nicht gelesen werden.'));
+            reader.readAsDataURL(file);
+          }, {once: true});
+          picker.click();
+        },
         relative_urls: false,
         setup: editor => {
           const selectedTableCells = () => {
