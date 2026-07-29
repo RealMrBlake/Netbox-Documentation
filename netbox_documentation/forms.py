@@ -48,6 +48,7 @@ class DocumentForm(NetBoxModelForm):
     )
     tenant = DynamicModelChoiceField(
         queryset=Tenant.objects.all(), required=False, selector=True, label="Mandant",
+        query_params={"group_id": "$tenant_group"},
     )
 
     fieldsets = (
@@ -154,6 +155,7 @@ class DocumentCategoryForm(NetBoxModelForm):
     )
     tenant = DynamicModelChoiceField(
         queryset=Tenant.objects.all(), required=False, selector=True, label="Mandant",
+        query_params={"group_id": "$tenant_group"},
     )
 
     fieldsets = (FieldSet("name", "slug", "parent", "tenant_group", "tenant", "description", "tags", name="Ordner"),)
