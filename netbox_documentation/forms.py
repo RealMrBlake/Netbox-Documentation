@@ -12,6 +12,7 @@ from utilities.forms.rendering import FieldSet
 from utilities.forms.widgets import HTMXSelect
 from netbox.forms import NetBoxModelForm
 from dcim.models import Device
+from tenancy.models import Tenant, TenantGroup
 from .embedded_images import EmbeddedImageError, store_embedded_images, validate_embedded_images
 from .models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
 
@@ -42,15 +43,21 @@ class DocumentForm(NetBoxModelForm):
     }), help_text="Formatierter Text mit Tabellen, Farben, Schriftarten und Größen.")
     body_format = forms.CharField(widget=forms.HiddenInput(), initial="html")
     category = DynamicModelChoiceField(queryset=DocumentCategory.objects.all(), required=False, label="Ordner")
+    tenant_group = DynamicModelChoiceField(
+        queryset=TenantGroup.objects.all(), required=False, selector=True, label="Mandantengruppe",
+    )
+    tenant = DynamicModelChoiceField(
+        queryset=Tenant.objects.all(), required=False, selector=True, label="Mandant",
+    )
 
     fieldsets = (
-        FieldSet("title", "slug", "category", "summary", "is_published", "tags", name="Dokumentation"),
+        FieldSet("title", "slug", "category", "tenant_group", "tenant", "summary", "is_published", "tags", name="Dokumentation"),
         FieldSet("body", "body_format", name="Inhalt"),
     )
 
     class Meta:
         model = Document
-        fields = ("title", "slug", "category", "summary", "body", "body_format", "is_published", "tags")
+        fields = ("title", "slug", "category", "tenant_group", "tenant", "summary", "body", "body_format", "is_published", "tags")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -69,6 +76,13 @@ class DocumentForm(NetBoxModelForm):
         except EmbeddedImageError as exc:
             raise forms.ValidationError(str(exc)) from exc
         return body
+
+    def clean(self):
+        cleaned = super().clean()
+        tenant, group = cleaned.get("tenant"), cleaned.get("tenant_group")
+        if tenant and group and tenant.group_id != group.pk:
+            self.add_error("tenant", "Der Mandant gehört nicht zur ausgewählten Mandantengruppe.")
+        return cleaned
 
     def save(self, commit=True):
         document = super().save(commit=commit)
@@ -134,17 +148,30 @@ class AssignmentForm(NetBoxModelForm):
 class DocumentCategoryForm(NetBoxModelForm):
     slug = SlugField(slug_source="name")
     parent = DynamicModelChoiceField(queryset=DocumentCategory.objects.all(), required=False, label="Übergeordneter Ordner")
+    tenant_group = DynamicModelChoiceField(
+        queryset=TenantGroup.objects.all(), required=False, selector=True, label="Mandantengruppe",
+    )
+    tenant = DynamicModelChoiceField(
+        queryset=Tenant.objects.all(), required=False, selector=True, label="Mandant",
+    )
 
-    fieldsets = (FieldSet("name", "slug", "parent", "description", "tags", name="Ordner"),)
+    fieldsets = (FieldSet("name", "slug", "parent", "tenant_group", "tenant", "description", "tags", name="Ordner"),)
 
     class Meta:
         model = DocumentCategory
-        fields = ("name", "slug", "parent", "description", "tags")
+        fields = ("name", "slug", "parent", "tenant_group", "tenant", "description", "tags")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
             self.fields["parent"].queryset = DocumentCategory.objects.exclude(pk=self.instance.pk)
+
+    def clean(self):
+        cleaned = super().clean()
+        tenant, group = cleaned.get("tenant"), cleaned.get("tenant_group")
+        if tenant and group and tenant.group_id != group.pk:
+            self.add_error("tenant", "Der Mandant gehört nicht zur ausgewählten Mandantengruppe.")
+        return cleaned
 
 
 class ImportForm(forms.Form):

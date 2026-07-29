@@ -46,14 +46,14 @@ class EditorAssetView(View):
 
 
 class DocumentListView(generic.ObjectListView):
-    queryset = Document.objects.prefetch_related("assignments")
+    queryset = Document.objects.select_related("category", "tenant_group", "tenant").prefetch_related("assignments")
     table = DocumentTable
     filterset = DocumentFilterSet
     actions = (AddObject, BulkImport, BulkDelete)
 
 
 class DocumentView(generic.ObjectView):
-    queryset = Document.objects.prefetch_related("assignments", "attachments")
+    queryset = Document.objects.select_related("category", "tenant_group", "tenant").prefetch_related("assignments", "attachments")
 
 
 class DocumentPrintView(PermissionRequiredMixin, View):
@@ -85,14 +85,14 @@ class DocumentBulkDeleteView(generic.BulkDeleteView):
 
 
 class DocumentCategoryListView(generic.ObjectListView):
-    queryset = DocumentCategory.objects.select_related("parent").prefetch_related("documents")
+    queryset = DocumentCategory.objects.select_related("parent", "tenant_group", "tenant").prefetch_related("documents")
     table = DocumentCategoryTable
     filterset = DocumentCategoryFilterSet
     actions = (AddObject, BulkImport, BulkDelete)
 
 
 class DocumentCategoryView(generic.ObjectView):
-    queryset = DocumentCategory.objects.prefetch_related("children", "documents")
+    queryset = DocumentCategory.objects.select_related("tenant_group", "tenant").prefetch_related("children", "documents")
 
 
 class DocumentCategoryEditView(generic.ObjectEditView):
@@ -170,8 +170,12 @@ class DocumentImportView(PermissionRequiredMixin, View):
                 while Document.objects.filter(slug=slug).exists():
                     slug = f"{base_slug}-{counter}"
                     counter += 1
+                category = form.cleaned_data.get("category")
                 document = Document.objects.create(
                     title=title, slug=slug, body=result.markdown, body_format=result.body_format,
+                    category=category,
+                    tenant_group=category.tenant_group if category else None,
+                    tenant=category.tenant if category else None,
                 )
             keep = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("keep_imported_file", True)
             if keep:
@@ -351,7 +355,11 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                 document.body = sheet.markdown
                 document.body_format = sheet.body_format
                 document.summary = f"Importiert aus {preview.original_name}"
-                document.save(update_fields=("title", "body", "body_format", "summary", "last_updated"))
+                document.tenant_group = preview.category.tenant_group
+                document.tenant = preview.category.tenant
+                document.save(update_fields=(
+                    "title", "body", "body_format", "summary", "tenant_group", "tenant", "last_updated",
+                ))
                 updated_count += 1
             else:
                 base_slug = slugify(title)[:180] or "arbeitsblatt"
@@ -362,6 +370,7 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                 document = Document.objects.create(
                     title=title[:200], slug=document_slug, body=sheet.markdown,
                     body_format=sheet.body_format, category=preview.category,
+                    tenant_group=preview.category.tenant_group, tenant=preview.category.tenant,
                     summary=f"Importiert aus {preview.original_name}",
                 )
                 created_count += 1

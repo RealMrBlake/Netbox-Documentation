@@ -3,6 +3,15 @@
 {% block content %}
 <div class="row">
   <div class="col col-md-4">
+    {% if object.tenant_group or object.tenant %}
+    <div class="card mb-3">
+      <h5 class="card-header">Mandantenzuordnung</h5>
+      <div class="list-group list-group-flush">
+        {% if object.tenant_group %}<a class="list-group-item list-group-item-action" href="{{ object.tenant_group.get_absolute_url }}"><i class="mdi mdi-account-group"></i> {{ object.tenant_group }}</a>{% endif %}
+        {% if object.tenant %}<a class="list-group-item list-group-item-action" href="{{ object.tenant.get_absolute_url }}"><i class="mdi mdi-domain"></i> {{ object.tenant }}</a>{% endif %}
+      </div>
+    </div>
+    {% endif %}
     <div class="card">
       <h5 class="card-header">Unterordner</h5>
       <div class="list-group list-group-flush">

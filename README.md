@@ -7,7 +7,8 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 - Dokumentationen direkt in NetBox schreiben und als sicher bereinigten Rich Text anzeigen
 - Word-ähnlicher WYSIWYG-Editor mit Schriftarten, Schriftgrößen, Farben, Ausrichtung und Tabellen
 - Hierarchische Ordner und Unterordner für eine BookStack-ähnliche Struktur
-- Breite Editoransicht und Fokusmodus innerhalb des NetBox-Layouts
+- Breite Editoransicht und TinyMCE-Vollbildmodus
+- Dokumentationen und Ordner optional Mandanten und Mandantengruppen zuweisen
 - Bilder direkt vom eigenen Gerät in die Dokumentation hochladen
 - Formatierte Word-Inhalte inklusive Tabellen und unterstützten Zwischenablage-Bildern einfügen
 - Mehrere Dokumentationen mit Ordnern, Zuordnungen und Anhängen als ZIP exportieren und wieder importieren
@@ -28,7 +29,7 @@ Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleit
 
 ## Kompatibilität
 
-Die Version `0.7.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+Die Version `0.9.0` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
 
 ## Installation
 

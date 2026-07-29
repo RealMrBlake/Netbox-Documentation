@@ -10,7 +10,7 @@ class DocumentTable(NetBoxTable):
 
     class Meta(NetBoxTable.Meta):
         model = Document
-        fields = ("pk", "title", "category", "summary", "is_published", "assignments", "last_updated", "actions")
+        fields = ("pk", "title", "category", "tenant_group", "tenant", "summary", "is_published", "assignments", "last_updated", "actions")
 
 
 class DocumentCategoryTable(NetBoxTable):
@@ -20,7 +20,7 @@ class DocumentCategoryTable(NetBoxTable):
 
     class Meta(NetBoxTable.Meta):
         model = DocumentCategory
-        fields = ("pk", "name", "parent", "description", "document_count", "actions")
+        fields = ("pk", "name", "parent", "tenant_group", "tenant", "description", "document_count", "actions")
 
 
 class AssignmentTable(NetBoxTable):

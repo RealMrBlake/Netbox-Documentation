@@ -8,7 +8,7 @@ class DocumentSerializer(NetBoxModelSerializer):
 
     class Meta:
         model = Document
-        fields = ("id", "url", "display", "title", "slug", "category", "summary", "body", "body_format", "is_published", "tags", "created", "last_updated")
+        fields = ("id", "url", "display", "title", "slug", "category", "tenant_group", "tenant", "summary", "body", "body_format", "is_published", "tags", "created", "last_updated")
 
 
 class DocumentAssignmentSerializer(NetBoxModelSerializer):
@@ -24,7 +24,7 @@ class DocumentCategorySerializer(NetBoxModelSerializer):
 
     class Meta:
         model = DocumentCategory
-        fields = ("id", "url", "display", "name", "slug", "parent", "description", "tags", "created", "last_updated")
+        fields = ("id", "url", "display", "name", "slug", "parent", "tenant_group", "tenant", "description", "tags", "created", "last_updated")
 
 
 class DocumentAttachmentSerializer(NetBoxModelSerializer):

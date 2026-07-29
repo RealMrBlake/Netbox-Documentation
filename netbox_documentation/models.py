@@ -19,6 +19,14 @@ class Document(NetBoxModel):
     summary = models.CharField(max_length=500, blank=True)
     is_published = models.BooleanField(default=True)
     category = models.ForeignKey("DocumentCategory", on_delete=models.SET_NULL, null=True, blank=True, related_name="documents")
+    tenant_group = models.ForeignKey(
+        "tenancy.TenantGroup", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="documentation_documents",
+    )
+    tenant = models.ForeignKey(
+        "tenancy.Tenant", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="documentation_documents",
+    )
 
     class Meta:
         ordering = ("title",)
@@ -68,6 +76,14 @@ class DocumentCategory(NetBoxModel):
     slug = models.SlugField(max_length=100)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="children")
     description = models.CharField(max_length=500, blank=True)
+    tenant_group = models.ForeignKey(
+        "tenancy.TenantGroup", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="documentation_categories",
+    )
+    tenant = models.ForeignKey(
+        "tenancy.Tenant", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="documentation_categories",
+    )
 
     class Meta:
         ordering = ("name",)

@@ -5,7 +5,7 @@ from .models import Document, DocumentAssignment, DocumentCategory
 class DocumentFilterSet(NetBoxModelFilterSet):
     class Meta:
         model = Document
-        fields = ("id", "title", "slug", "category_id", "is_published")
+        fields = ("id", "title", "slug", "category_id", "tenant_group_id", "tenant_id", "is_published")
 
     def search(self, queryset, name, value):
         from django.db.models import Q
@@ -21,7 +21,7 @@ class AssignmentFilterSet(NetBoxModelFilterSet):
 class DocumentCategoryFilterSet(NetBoxModelFilterSet):
     class Meta:
         model = DocumentCategory
-        fields = ("id", "name", "slug", "parent_id")
+        fields = ("id", "name", "slug", "parent_id", "tenant_group_id", "tenant_id")
 
     def search(self, queryset, name, value):
         return queryset.filter(name__icontains=value)

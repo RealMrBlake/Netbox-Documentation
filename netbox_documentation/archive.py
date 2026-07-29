@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils.text import slugify
+from tenancy.models import Tenant, TenantGroup
 
 from .models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
 
@@ -43,11 +44,25 @@ def _category_path(category):
     return list(reversed(path))
 
 
+def _category_tenancy_path(category):
+    path, seen = [], set()
+    while category and category.pk not in seen:
+        path.append({
+            "tenant": category.tenant.slug if category.tenant else None,
+            "tenant_group": category.tenant_group.slug if category.tenant_group else None,
+        })
+        seen.add(category.pk)
+        category = category.parent
+    return list(reversed(path))
+
+
 def export_documents(documents):
     stream = SpooledTemporaryFile(max_size=10 * 1024 * 1024, mode="w+b")
     manifest = {"format": ARCHIVE_FORMAT, "version": ARCHIVE_VERSION, "documents": []}
     with ZipFile(stream, "w", compression=ZIP_DEFLATED, compresslevel=6) as archive:
-        for document in documents.prefetch_related("assignments__assigned_object_type", "attachments").select_related("category"):
+        for document in documents.prefetch_related("assignments__assigned_object_type", "attachments").select_related(
+            "category", "tenant", "tenant_group", "category__tenant", "category__tenant_group",
+        ):
             root = f"documents/{document.pk}"
             extension = "html" if document.body_format == "html" else "md"
             body_path = f"{root}/content.{extension}"
@@ -76,6 +91,9 @@ def export_documents(documents):
                 "title": document.title, "slug": document.slug, "summary": document.summary,
                 "body_format": document.body_format, "is_published": document.is_published,
                 "category_path": _category_path(document.category), "body_path": body_path,
+                "category_tenancy": _category_tenancy_path(document.category),
+                "tenant": document.tenant.slug if document.tenant else None,
+                "tenant_group": document.tenant_group.slug if document.tenant_group else None,
                 "assignments": assignments, "attachments": attachments,
             })
         archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8"))
@@ -105,9 +123,10 @@ def _read_json(archive, name):
         raise ArchiveFailure("Das Archiv enthält kein gültiges manifest.json.") from exc
 
 
-def _category_from_path(names):
+def _category_from_path(names, tenancy_path=None):
     parent = None
-    for name in names:
+    tenancy_path = tenancy_path or []
+    for index, name in enumerate(names):
         name = str(name).strip()[:100]
         if not name:
             continue
@@ -115,6 +134,11 @@ def _category_from_path(names):
         category = DocumentCategory.objects.filter(parent=parent, slug=slug).first()
         if not category:
             category = DocumentCategory.objects.create(name=name, slug=slug, parent=parent)
+        tenancy = tenancy_path[index] if index < len(tenancy_path) and isinstance(tenancy_path[index], dict) else {}
+        if tenancy:
+            category.tenant_group = TenantGroup.objects.filter(slug=tenancy.get("tenant_group")).first()
+            category.tenant = Tenant.objects.filter(slug=tenancy.get("tenant")).first()
+            category.save(update_fields=("tenant_group", "tenant", "last_updated"))
         parent = category
     return parent
 
@@ -153,7 +177,9 @@ def import_archive(upload, update_existing=False):
                 raise ArchiveFailure("Ein Dokumentinhalt fehlt oder ist nicht UTF-8-kodiert.") from exc
             source_slug = str(record.get("slug") or record["title"])
             document = Document.objects.filter(slug=source_slug).first() if update_existing else None
-            category = _category_from_path(record.get("category_path") or [])
+            category = _category_from_path(
+                record.get("category_path") or [], record.get("category_tenancy") or [],
+            )
             if document:
                 updated += 1
             else:
@@ -165,6 +191,8 @@ def import_archive(upload, update_existing=False):
             document.body_format = record.get("body_format") if record.get("body_format") in {"html", "markdown"} else "html"
             document.is_published = bool(record.get("is_published", True))
             document.category = category
+            document.tenant_group = TenantGroup.objects.filter(slug=record.get("tenant_group")).first()
+            document.tenant = Tenant.objects.filter(slug=record.get("tenant")).first()
             document.save()
             for assignment in record.get("assignments") or []:
                 label = f"{assignment.get('app_label')}.{assignment.get('model')}"
