@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "netbox-documentation"
-version = "0.9.0"
+version = "0.9.1"
 description = "Integrated Markdown wiki and office document importer for NetBox"
 readme = "README.md"
 requires-python = ">=3.10"

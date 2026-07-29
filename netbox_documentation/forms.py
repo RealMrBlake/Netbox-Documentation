@@ -78,7 +78,8 @@ class DocumentForm(NetBoxModelForm):
         return body
 
     def clean(self):
-        cleaned = super().clean()
+        super().clean()
+        cleaned = self.cleaned_data
         tenant, group = cleaned.get("tenant"), cleaned.get("tenant_group")
         if tenant and group and tenant.group_id != group.pk:
             self.add_error("tenant", "Der Mandant gehört nicht zur ausgewählten Mandantengruppe.")
@@ -167,7 +168,8 @@ class DocumentCategoryForm(NetBoxModelForm):
             self.fields["parent"].queryset = DocumentCategory.objects.exclude(pk=self.instance.pk)
 
     def clean(self):
-        cleaned = super().clean()
+        super().clean()
+        cleaned = self.cleaned_data
         tenant, group = cleaned.get("tenant"), cleaned.get("tenant_group")
         if tenant and group and tenant.group_id != group.pk:
             self.add_error("tenant", "Der Mandant gehört nicht zur ausgewählten Mandantengruppe.")
