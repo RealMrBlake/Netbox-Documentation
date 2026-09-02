@@ -123,6 +123,48 @@ def _read_json(archive, name):
         raise ArchiveFailure("Das Archiv enthält kein gültiges manifest.json.") from exc
 
 
+def _resolve_tenant_group(slug, context):
+    """Look up a tenant group by slug for an imported record.
+
+    Returns None if no slug was recorded (i.e. the object genuinely had no
+    tenant group). Raises ArchiveFailure if a slug *was* recorded but no
+    matching TenantGroup exists on this instance, instead of silently
+    dropping the assignment - a missing tenant group later tripping over
+    an unrelated validation rule further downstream is far more confusing
+    than failing here with a precise message.
+    """
+    if not slug:
+        return None
+    group = TenantGroup.objects.filter(slug=slug).first()
+    if group is None:
+        raise ArchiveFailure(
+            f"{context}: Die Mandantengruppe „{slug}“ existiert auf dieser Instanz nicht. "
+            "Bitte die Mandantengruppe vorher anlegen oder den Import mit einem angepassten "
+            "manifest.json wiederholen."
+        )
+    return group
+
+
+def _resolve_tenant(slug, context):
+    """Look up a tenant by slug for an imported record.
+
+    Same reasoning as _resolve_tenant_group(): fail loudly and specifically
+    instead of leaving the field empty and letting a generic "a tenant is
+    required" validation error surface later with no indication of which
+    tenant or which record was actually the problem.
+    """
+    if not slug:
+        return None
+    tenant = Tenant.objects.filter(slug=slug).first()
+    if tenant is None:
+        raise ArchiveFailure(
+            f"{context}: Der Mandant „{slug}“ existiert auf dieser Instanz nicht. "
+            "Bitte den Mandanten vorher anlegen oder den Import mit einem angepassten "
+            "manifest.json wiederholen."
+        )
+    return tenant
+
+
 def _category_from_path(names, tenancy_path=None):
     parent = None
     tenancy_path = tenancy_path or []
@@ -136,8 +178,9 @@ def _category_from_path(names, tenancy_path=None):
             category = DocumentCategory.objects.create(name=name, slug=slug, parent=parent)
         tenancy = tenancy_path[index] if index < len(tenancy_path) and isinstance(tenancy_path[index], dict) else {}
         if tenancy:
-            category.tenant_group = TenantGroup.objects.filter(slug=tenancy.get("tenant_group")).first()
-            category.tenant = Tenant.objects.filter(slug=tenancy.get("tenant")).first()
+            context = f"Ordner „{name}“"
+            category.tenant_group = _resolve_tenant_group(tenancy.get("tenant_group"), context)
+            category.tenant = _resolve_tenant(tenancy.get("tenant"), context)
             category.save(update_fields=("tenant_group", "tenant", "last_updated"))
         parent = category
     return parent
@@ -191,8 +234,9 @@ def import_archive(upload, update_existing=False):
             document.body_format = record.get("body_format") if record.get("body_format") in {"html", "markdown"} else "html"
             document.is_published = bool(record.get("is_published", True))
             document.category = category
-            document.tenant_group = TenantGroup.objects.filter(slug=record.get("tenant_group")).first()
-            document.tenant = Tenant.objects.filter(slug=record.get("tenant")).first()
+            context = f"Dokument „{document.title}“"
+            document.tenant_group = _resolve_tenant_group(record.get("tenant_group"), context)
+            document.tenant = _resolve_tenant(record.get("tenant"), context)
             document.save()
             for assignment in record.get("assignments") or []:
                 label = f"{assignment.get('app_label')}.{assignment.get('model')}"
