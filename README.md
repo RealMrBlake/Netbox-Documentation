@@ -65,6 +65,40 @@ pip install -r /opt/netbox/local_requirements.txt
 
 Bei einem privaten Repository muss der NetBox-Server Zugriff auf das Repository besitzen. Zugangsdaten sollten nicht direkt in `local_requirements.txt` gespeichert werden; stattdessen sollte ein geeigneter Git-Credential-Helper oder ein nur lesbarer Deployment-Zugang verwendet werden.
 
+### Plugin aktualisieren
+
+Das Plugin kann direkt aus dem `main`-Branch des HTTPS-Git-Repositorys aktualisiert werden. Zuerst das NetBox-Virtualenv aktivieren und anschließend das Paket mit `pip` aktualisieren:
+
+```bash
+source /opt/netbox/venv/bin/activate
+python -m pip install --upgrade "git+https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git@main"
+```
+
+Danach müssen mögliche neue Datenbankmigrationen und statische Dateien übernommen sowie die NetBox-Dienste neu gestartet werden:
+
+```bash
+cd /opt/netbox/netbox
+python manage.py migrate netbox_documentation
+python manage.py collectstatic --no-input
+sudo systemctl restart netbox netbox-rq
+```
+
+Die installierte Plugin-Version kann anschließend geprüft werden:
+
+```bash
+python -m pip show netbox-documentation
+python manage.py showmigrations netbox_documentation
+```
+
+Falls ein korrigierter Stand mit unveränderter Versionsnummer erneut installiert werden muss, kann die Installation einmalig erzwungen werden:
+
+```bash
+source /opt/netbox/venv/bin/activate
+python -m pip install --upgrade --force-reinstall "git+https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git@main"
+```
+
+Der Eintrag in `/opt/netbox/local_requirements.txt` bleibt dabei unverändert und sollte weiterhin auf denselben Git-Branch zeigen.
+
 ### NetBox konfigurieren
 
 In `configuration.py`:
