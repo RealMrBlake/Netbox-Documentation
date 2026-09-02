@@ -5,6 +5,7 @@ from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.text import slugify
 from tenancy.models import Tenant, TenantGroup
@@ -19,6 +20,14 @@ MAX_ENTRIES = 5000
 
 class ArchiveFailure(ValueError):
     pass
+
+
+def _save_imported_object(instance, context, **save_kwargs):
+    try:
+        instance.save(**save_kwargs)
+    except ValidationError as exc:
+        messages = getattr(exc, "messages", None) or [str(exc)]
+        raise ArchiveFailure(f"{context}: {'; '.join(messages)}") from exc
 
 
 def documents_for_categories(categories, include_subfolders=True, user=None):
@@ -173,15 +182,32 @@ def _category_from_path(names, tenancy_path=None):
         if not name:
             continue
         slug = slugify(name)[:100] or "ordner"
+        tenancy = tenancy_path[index] if index < len(tenancy_path) and isinstance(tenancy_path[index], dict) else {}
+        context = f"Ordner „{name}“"
+        tenant_group = _resolve_tenant_group(tenancy.get("tenant_group"), context)
+        tenant = _resolve_tenant(tenancy.get("tenant"), context)
+        if tenant and tenant_group and tenant.group_id != tenant_group.pk:
+            raise ArchiveFailure(
+                f"{context}: Der Mandant „{tenant.slug}“ gehört nicht zur "
+                f"Mandantengruppe „{tenant_group.slug}“ auf dieser Instanz."
+            )
         category = DocumentCategory.objects.filter(parent=parent, slug=slug).first()
         if not category:
-            category = DocumentCategory.objects.create(name=name, slug=slug, parent=parent)
-        tenancy = tenancy_path[index] if index < len(tenancy_path) and isinstance(tenancy_path[index], dict) else {}
-        if tenancy:
-            context = f"Ordner „{name}“"
-            category.tenant_group = _resolve_tenant_group(tenancy.get("tenant_group"), context)
-            category.tenant = _resolve_tenant(tenancy.get("tenant"), context)
-            category.save(update_fields=("tenant_group", "tenant", "last_updated"))
+            # Set tenancy before the first save. NetBox installations may
+            # enforce a tenant via custom validation rules, so creating the
+            # category first and assigning its tenant in a second save fails.
+            category = DocumentCategory(
+                name=name, slug=slug, parent=parent,
+                tenant_group=tenant_group, tenant=tenant,
+            )
+            _save_imported_object(category, context)
+        elif tenancy:
+            category.tenant_group = tenant_group
+            category.tenant = tenant
+            _save_imported_object(
+                category, context,
+                update_fields=("tenant_group", "tenant", "last_updated"),
+            )
         parent = category
     return parent
 
@@ -237,7 +263,12 @@ def import_archive(upload, update_existing=False):
             context = f"Dokument „{document.title}“"
             document.tenant_group = _resolve_tenant_group(record.get("tenant_group"), context)
             document.tenant = _resolve_tenant(record.get("tenant"), context)
-            document.save()
+            if document.tenant and document.tenant_group and document.tenant.group_id != document.tenant_group_id:
+                raise ArchiveFailure(
+                    f"{context}: Der Mandant „{document.tenant.slug}“ gehört nicht zur "
+                    f"Mandantengruppe „{document.tenant_group.slug}“ auf dieser Instanz."
+                )
+            _save_imported_object(document, context)
             for assignment in record.get("assignments") or []:
                 label = f"{assignment.get('app_label')}.{assignment.get('model')}"
                 if label not in allowed:
