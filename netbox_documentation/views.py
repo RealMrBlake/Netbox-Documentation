@@ -30,6 +30,21 @@ from .models import (
 from .tables import DocumentTable, AssignmentTable, DocumentCategoryTable
 
 
+def _active_tenant_ids(request):
+    """Tenant IDs of the globally selected tenant/tenant-group (netbox-utilities), if any.
+
+    Our tree views build their querysets by hand rather than through a NetBoxModelFilterSet,
+    so they don't pick up the tenant_id/tenant_group_id GET param that plugin's middleware
+    injects for FilterSet-based views. Read its public scope API directly instead.
+    """
+    try:
+        from netbox_utilities.tenant_scope import active_tenant_scope
+    except ImportError:
+        return None
+    scope = active_tenant_scope.get()
+    return scope.tenant_ids if scope else None
+
+
 class EditorAssetView(View):
     """Serve the bundled editor assets when NetBox's static proxy is unavailable."""
 
@@ -59,16 +74,16 @@ class DocumentTreeView(PermissionRequiredMixin, View):
     template_name = "netbox_documentation/document_tree.html"
 
     def get(self, request):
-        categories = list(
-            DocumentCategory.objects.restrict(request.user, "view")
-            .select_related("tenant_group", "tenant")
-            .order_by("name")
-        )
-        documents = list(
-            Document.objects.restrict(request.user, "view")
-            .select_related("category", "tenant_group", "tenant")
-            .order_by("title")
-        )
+        tenant_ids = _active_tenant_ids(request)
+
+        category_qs = DocumentCategory.objects.restrict(request.user, "view").select_related("tenant_group", "tenant")
+        document_qs = Document.objects.restrict(request.user, "view").select_related("category", "tenant_group", "tenant")
+        if tenant_ids is not None:
+            category_qs = category_qs.filter(tenant_id__in=tenant_ids)
+            document_qs = document_qs.filter(tenant_id__in=tenant_ids)
+
+        categories = list(category_qs.order_by("name"))
+        documents = list(document_qs.order_by("title"))
 
         nodes = {category.pk: {"object": category, "children": [], "documents": []} for category in categories}
         roots = []
@@ -135,12 +150,17 @@ class DocumentCategoryTreeView(PermissionRequiredMixin, View):
     template_name = "netbox_documentation/documentcategory_tree.html"
 
     def get(self, request):
-        categories = list(
+        tenant_ids = _active_tenant_ids(request)
+
+        category_qs = (
             DocumentCategory.objects.restrict(request.user, "view")
             .select_related("tenant_group", "tenant")
             .annotate(document_total=Count("documents", distinct=True))
-            .order_by("name")
         )
+        if tenant_ids is not None:
+            category_qs = category_qs.filter(tenant_id__in=tenant_ids)
+
+        categories = list(category_qs.order_by("name"))
         nodes = {category.pk: {"object": category, "children": []} for category in categories}
         roots = []
         for category in categories:
