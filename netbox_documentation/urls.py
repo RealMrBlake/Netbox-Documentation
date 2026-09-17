@@ -24,6 +24,7 @@ urlpatterns = (
     path("assignments/<int:pk>/edit/", views.AssignmentEditView.as_view(), name="documentassignment_edit"),
     path("assignments/<int:pk>/delete/", views.AssignmentDeleteView.as_view(), name="documentassignment_delete"),
     path("folders/", views.DocumentCategoryListView.as_view(), name="documentcategory_list"),
+    path("folders/tree/", views.DocumentCategoryTreeView.as_view(), name="documentcategory_tree"),
     path("folders/add/", views.DocumentCategoryEditView.as_view(), name="documentcategory_add"),
     path("folders/import/", views.DocumentImportView.as_view(), name="documentcategory_bulk_import"),
     path("folders/delete/", views.DocumentCategoryBulkDeleteView.as_view(), name="documentcategory_bulk_delete"),

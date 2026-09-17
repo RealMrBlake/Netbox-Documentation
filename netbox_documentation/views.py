@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
@@ -91,8 +91,32 @@ class DocumentCategoryListView(generic.ObjectListView):
     actions = (AddObject, BulkImport, BulkDelete)
 
 
+class DocumentCategoryTreeView(PermissionRequiredMixin, View):
+    """Nextcloud/Bookstack-style nested folder browser for document categories."""
+
+    permission_required = "netbox_documentation.view_documentcategory"
+    template_name = "netbox_documentation/documentcategory_tree.html"
+
+    def get(self, request):
+        categories = list(
+            DocumentCategory.objects.restrict(request.user, "view")
+            .select_related("tenant_group", "tenant")
+            .annotate(document_total=Count("documents", distinct=True))
+            .order_by("name")
+        )
+        nodes = {category.pk: {"object": category, "children": []} for category in categories}
+        roots = []
+        for category in categories:
+            node = nodes[category.pk]
+            parent_node = nodes.get(category.parent_id)
+            (parent_node["children"] if parent_node else roots).append(node)
+        return render(request, self.template_name, {"tree": roots, "category_count": len(categories)})
+
+
 class DocumentCategoryView(generic.ObjectView):
-    queryset = DocumentCategory.objects.select_related("tenant_group", "tenant").prefetch_related("children", "documents")
+    queryset = DocumentCategory.objects.select_related("parent", "tenant_group", "tenant").prefetch_related(
+        "parent__parent", "children", "documents",
+    )
 
 
 class DocumentCategoryEditView(generic.ObjectEditView):

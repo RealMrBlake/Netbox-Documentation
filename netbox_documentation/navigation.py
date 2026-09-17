@@ -11,7 +11,7 @@ menu = PluginMenu(
         PluginMenuItem(link="plugins:netbox_documentation:documentassignment_list", link_text="Zuordnungen", buttons=(
             PluginMenuButton(link="plugins:netbox_documentation:documentassignment_add", title="Zuordnen", icon_class="mdi mdi-link-plus", color=ButtonColorChoices.GREEN),
         )),
-        PluginMenuItem(link="plugins:netbox_documentation:documentcategory_list", link_text="Ordner & Kategorien", buttons=(
+        PluginMenuItem(link="plugins:netbox_documentation:documentcategory_tree", link_text="Ordner & Kategorien", buttons=(
             PluginMenuButton(link="plugins:netbox_documentation:documentcategory_add", title="Ordner erstellen", icon_class="mdi mdi-folder-plus", color=ButtonColorChoices.GREEN),
         )),
         PluginMenuItem(link="plugins:netbox_documentation:document_archive", link_text="ZIP Export & Import"),

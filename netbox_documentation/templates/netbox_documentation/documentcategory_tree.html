@@ -1,0 +1,66 @@
+{% extends 'base/layout.html' %}
+
+{% block title %}Ordner & Kategorien{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+  <div class="col d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <input type="search" id="folder-tree-search" class="form-control" style="max-width: 20rem;" placeholder="Ordner durchsuchen…">
+    <div class="d-flex gap-2">
+      {% if perms.netbox_documentation.add_documentcategory %}
+      <a href="{% url 'plugins:netbox_documentation:documentcategory_add' %}" class="btn btn-success"><i class="mdi mdi-folder-plus"></i> Ordner erstellen</a>
+      {% endif %}
+      <a href="{% url 'plugins:netbox_documentation:documentcategory_list' %}" class="btn btn-outline-secondary"><i class="mdi mdi-format-list-bulleted"></i> Listenansicht</a>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    {% if tree %}
+    <ul class="netbox-doc-tree list-unstyled mb-0">
+      {% for node in tree %}
+        {% include 'netbox_documentation/inc/category_tree_node.html' with node=node %}
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted mb-0">Noch keine Ordner vorhanden.</p>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .netbox-doc-tree { margin: 0; }
+  .netbox-doc-tree .netbox-doc-tree { margin-left: 1.5rem; margin-top: .35rem; border-left: 1px dashed var(--tblr-border-color, #dee2e6); padding-left: 1rem; }
+  .netbox-doc-tree-item { margin-bottom: .35rem; }
+  .netbox-doc-tree-item > details > summary { list-style: none; cursor: pointer; }
+  .netbox-doc-tree-item > details > summary::-webkit-details-marker { display: none; }
+  .netbox-doc-tree-item > details > summary::before { content: "\f0142"; font-family: "Material Design Icons"; margin-right: .35rem; display: inline-block; transition: transform .15s ease; }
+  .netbox-doc-tree-item > details[open] > summary::before { transform: rotate(90deg); }
+  .netbox-doc-tree-summary { display: flex; align-items: center; gap: .5rem; padding: .25rem .25rem; border-radius: .25rem; }
+  .netbox-doc-tree-summary:hover { background-color: var(--tblr-bg-surface-secondary, rgba(0,0,0,.03)); }
+  .netbox-doc-tree-leaf { margin-left: 1.35rem; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var input = document.getElementById('folder-tree-search');
+  if (!input) return;
+  input.addEventListener('input', function () {
+    var term = input.value.trim().toLowerCase();
+    document.querySelectorAll('.netbox-doc-tree-item').forEach(function (li) {
+      var match = !term || li.dataset.name.indexOf(term) !== -1;
+      li.classList.toggle('d-none', !match);
+      if (match) {
+        var parent = li.parentElement.closest('.netbox-doc-tree-item');
+        while (parent) {
+          parent.classList.remove('d-none');
+          var details = parent.querySelector(':scope > details');
+          if (details) details.open = true;
+          parent = parent.parentElement.closest('.netbox-doc-tree-item');
+        }
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

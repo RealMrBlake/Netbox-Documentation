@@ -1,0 +1,30 @@
+<li class="netbox-doc-tree-item" data-name="{{ node.object.name|lower }}">
+  {% if node.children %}
+  <details open>
+    <summary class="netbox-doc-tree-summary">
+      <i class="mdi mdi-folder text-warning"></i>
+      <a href="{{ node.object.get_absolute_url }}">{{ node.object.name }}</a>
+      <span class="badge text-bg-secondary">{{ node.object.document_total }}</span>
+      {% if node.object.tenant %}<span class="badge text-bg-light"><i class="mdi mdi-domain"></i> {{ node.object.tenant }}</span>{% endif %}
+      {% if perms.netbox_documentation.change_documentcategory %}
+      <a href="{% url 'plugins:netbox_documentation:documentcategory_edit' node.object.pk %}" class="btn btn-sm btn-ghost-secondary" title="Bearbeiten"><i class="mdi mdi-pencil"></i></a>
+      {% endif %}
+    </summary>
+    <ul class="netbox-doc-tree list-unstyled">
+      {% for child in node.children %}
+        {% include 'netbox_documentation/inc/category_tree_node.html' with node=child %}
+      {% endfor %}
+    </ul>
+  </details>
+  {% else %}
+  <div class="netbox-doc-tree-summary netbox-doc-tree-leaf">
+    <i class="mdi mdi-folder-outline text-warning"></i>
+    <a href="{{ node.object.get_absolute_url }}">{{ node.object.name }}</a>
+    <span class="badge text-bg-secondary">{{ node.object.document_total }}</span>
+    {% if node.object.tenant %}<span class="badge text-bg-light"><i class="mdi mdi-domain"></i> {{ node.object.tenant }}</span>{% endif %}
+    {% if perms.netbox_documentation.change_documentcategory %}
+    <a href="{% url 'plugins:netbox_documentation:documentcategory_edit' node.object.pk %}" class="btn btn-sm btn-ghost-secondary" title="Bearbeiten"><i class="mdi mdi-pencil"></i></a>
+    {% endif %}
+  </div>
+  {% endif %}
+</li>

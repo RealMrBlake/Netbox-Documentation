@@ -103,6 +103,18 @@ class DocumentCategory(NetBoxModel):
     def get_absolute_url(self):
         return reverse("plugins:netbox_documentation:documentcategory", args=[self.pk])
 
+    @property
+    def ancestors(self):
+        """Ancestor folders from the root down to (excluding) this one, for breadcrumbs."""
+        result = []
+        parent = self.parent
+        seen = {self.pk}
+        while parent and parent.pk not in seen:
+            result.append(parent)
+            seen.add(parent.pk)
+            parent = parent.parent
+        return list(reversed(result))
+
     def clean(self):
         super().clean()
         from django.core.exceptions import ValidationError
