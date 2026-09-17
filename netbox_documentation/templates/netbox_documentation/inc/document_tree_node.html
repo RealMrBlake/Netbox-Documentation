@@ -1,0 +1,20 @@
+<li class="netbox-doc-tree-item" data-name="{{ node.object.name|lower }}">
+  <details open>
+    <summary class="netbox-doc-tree-summary">
+      <i class="mdi mdi-folder text-warning"></i>
+      <a href="{{ node.object.get_absolute_url }}">{{ node.object.name }}</a>
+      {% if node.object.tenant %}<span class="badge text-bg-light"><i class="mdi mdi-domain"></i> {{ node.object.tenant }}</span>{% endif %}
+    </summary>
+    <ul class="netbox-doc-tree list-unstyled">
+      {% for child in node.children %}
+        {% include 'netbox_documentation/inc/document_tree_node.html' with node=child %}
+      {% endfor %}
+      {% for document in node.documents %}
+        {% include 'netbox_documentation/inc/document_tree_file.html' with document=document %}
+      {% endfor %}
+      {% if not node.children and not node.documents %}
+      <li class="netbox-doc-tree-empty text-muted">Leer</li>
+      {% endif %}
+    </ul>
+  </details>
+</li>

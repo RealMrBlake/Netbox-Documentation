@@ -52,6 +52,43 @@ class DocumentListView(generic.ObjectListView):
     actions = (AddObject, BulkImport, BulkDelete)
 
 
+class DocumentTreeView(PermissionRequiredMixin, View):
+    """Windows-Explorer/Nextcloud-style folder browser: categories as folders, documents as files."""
+
+    permission_required = "netbox_documentation.view_document"
+    template_name = "netbox_documentation/document_tree.html"
+
+    def get(self, request):
+        categories = list(
+            DocumentCategory.objects.restrict(request.user, "view")
+            .select_related("tenant_group", "tenant")
+            .order_by("name")
+        )
+        documents = list(
+            Document.objects.restrict(request.user, "view")
+            .select_related("category", "tenant_group", "tenant")
+            .order_by("title")
+        )
+
+        nodes = {category.pk: {"object": category, "children": [], "documents": []} for category in categories}
+        roots = []
+        for category in categories:
+            node = nodes[category.pk]
+            parent_node = nodes.get(category.parent_id)
+            (parent_node["children"] if parent_node else roots).append(node)
+
+        uncategorized = []
+        for document in documents:
+            node = nodes.get(document.category_id)
+            (node["documents"] if node else uncategorized).append(document)
+
+        return render(request, self.template_name, {
+            "tree": roots,
+            "uncategorized": uncategorized,
+            "document_count": len(documents),
+        })
+
+
 class DocumentView(generic.ObjectView):
     queryset = Document.objects.select_related("category", "tenant_group", "tenant").prefetch_related("assignments", "attachments")
 

@@ -4,7 +4,8 @@ from . import models, views
 
 urlpatterns = (
     path("editor-assets/<path:asset_path>", views.EditorAssetView.as_view(), name="editor_asset"),
-    path("", views.DocumentListView.as_view(), name="document_list"),
+    path("", views.DocumentTreeView.as_view(), name="document_tree"),
+    path("list/", views.DocumentListView.as_view(), name="document_list"),
     path("documents/add/", views.DocumentEditView.as_view(), name="document_add"),
     path("documents/import/", views.DocumentImportView.as_view(), name="document_import"),
     path("documents/import/", views.DocumentImportView.as_view(), name="document_bulk_import"),

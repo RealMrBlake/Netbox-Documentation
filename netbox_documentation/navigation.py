@@ -4,7 +4,7 @@ from netbox.choices import ButtonColorChoices
 menu = PluginMenu(
     label="Dokumentation",
     groups=(("Wiki", (
-        PluginMenuItem(link="plugins:netbox_documentation:document_list", link_text="Dokumentationen", buttons=(
+        PluginMenuItem(link="plugins:netbox_documentation:document_tree", link_text="Dokumentationen", buttons=(
             PluginMenuButton(link="plugins:netbox_documentation:document_add", title="Neu", icon_class="mdi mdi-plus-thick", color=ButtonColorChoices.GREEN),
             PluginMenuButton(link="plugins:netbox_documentation:document_import", title="Import", icon_class="mdi mdi-file-import", color=ButtonColorChoices.BLUE),
         )),
