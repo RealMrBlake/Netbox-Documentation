@@ -1,107 +1,76 @@
 # NetBox Documentation
 
-Ein in NetBox integriertes Markdown-Wiki für Betriebsdokumentationen und Anleitungen.
+A wiki for operational documentation and how-tos, integrated into NetBox.
 
-## Funktionen
+| | |
+|---|---|
+| **Plugin name** | `netbox_documentation` |
+| **Package** | `netbox-documentation` |
+| **NetBox** | `>=4.0` |
+| **Python** | `>=3.10` |
+| **Repository** | <https://git.mrblake.cc/MrBlake/Netbox-Documentation> |
 
-- Dokumentationen direkt in NetBox schreiben und als sicher bereinigten Rich Text anzeigen
-- Word-ähnlicher WYSIWYG-Editor mit Schriftarten, Schriftgrößen, Farben, Ausrichtung und Tabellen
-- Hierarchische Ordner und Unterordner für eine BookStack-ähnliche Struktur
-- Breite Editoransicht und TinyMCE-Vollbildmodus
-- Dokumentationen und Ordner optional Mandanten und Mandantengruppen zuweisen
-- Bilder direkt vom eigenen Gerät in die Dokumentation hochladen
-- Formatierte Word-Inhalte inklusive Tabellen und unterstützten Zwischenablage-Bildern einfügen
-- Mehrere Dokumentationen mit Ordnern, Zuordnungen und Anhängen als ZIP exportieren und wieder importieren
-- Druckoptimierte A4-Ansicht zum Drucken oder Speichern als PDF
-- Seitenfüllende Großansicht per Schaltfläche oder Klick auf eine Tabelle
-- Lesbare Tabellen mit vollständigen Zellrahmen und horizontalem Inhalts-Scrolling
-- Tabellen-Presets, farbige Kopfzeilen und Zellhervorhebungen im WYSIWYG-Editor
-- Excel-Mehrblattimport: je Arbeitsblatt eine Dokumentation in einem gewählten Zielordner
-- Zweistufige Excel-Vorschau mit Blattauswahl und frei änderbaren Dokumenttiteln
-- Optionales Glätten von Excel-Tabellen in kompakte Feld-/Wert-Textblöcke
-- Eine Dokumentation mehreren Objekten zuordnen und umgekehrt
-- Unbegrenzt viele Objektzuordnungen pro Dokumentation; nur identische Doppelzuordnungen werden verhindert
-- Unterstützte Standardobjekte: Region, Standort, Location, Rack, Gerät, VM, VM-Cluster und Mandant/Kunde
-- DOCX, XLSX/XLSM, textbasierte PDF-, Markdown- und Textdateien importieren
-- Originaldatei optional zusammen mit der Dokumentation aufbewahren
-- Dokumentationen über die globale NetBox-Suche und per REST-API finden
-- NetBox-Berechtigungen, Änderungsprotokoll, Tags und Custom Fields verwenden
+## Features
 
-## Kompatibilität
+- Write documentation directly in NetBox, displayed as safely sanitised rich text
+- Word-like WYSIWYG editor with fonts, font sizes, colours, alignment and tables
+- Hierarchical folders and sub-folders for a BookStack-like structure
+- Wide editor view and TinyMCE full-screen mode
+- Optionally assign documents and folders to tenants and tenant groups
+- Upload images from your own device directly into a document
+- Paste formatted Word content including tables and supported clipboard images
+- Export and re-import multiple documents with folders, assignments and attachments as ZIP
+- Print-optimised A4 view for printing or saving as PDF
+- Full-page view via button or by clicking a table
+- Readable tables with full cell borders and horizontal content scrolling
+- Table presets, coloured header rows and cell highlighting in the editor
+- Excel multi-sheet import: one document per worksheet in a chosen target folder
+- Two-step Excel preview with sheet selection and editable document titles
+- Optional flattening of Excel tables into compact field/value text blocks
+- Assign one document to many objects and vice versa (unlimited; only identical duplicates are prevented)
+- Supported objects: region, site, location, rack, device, VM, VM cluster and tenant/customer
+- Import DOCX, XLSX/XLSM, text-based PDF, Markdown and text files
+- Optionally keep the original file together with the document
+- Find documents via NetBox global search and the REST API
+- NetBox permissions, changelog, tags and custom fields
 
-Die Version `0.9.3` zielt auf NetBox 4.x (mindestens 4.0). Vor einem produktiven Rollout sollte das Plugin gegen die konkret eingesetzte NetBox-Minor-Version in einer Testinstanz geprüft werden.
+## Compatibility
+
+- NetBox `>=4.0`
+- Python `>=3.10`
+
+Test the plugin against your exact NetBox minor version in a staging instance
+before a production rollout.
 
 ## Installation
 
-### Installation aus dem Git-Repository
+All paths assume a standard installation under `/opt/netbox`.
 
-Das Plugin kann ohne vorheriges Klonen direkt aus dem Git-Repository in das Python-Virtualenv von NetBox installiert werden:
-
-```bash
-source /opt/netbox/venv/bin/activate
-pip install git+https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git@main
-```
-
-### In `local_requirements.txt` eintragen
-
-Damit das Plugin bei NetBox-Updates und einer erneuten Installation der Python-Abhängigkeiten automatisch installiert wird, folgende Zeile in `/opt/netbox/local_requirements.txt` eintragen:
-
-```text
-git+https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git@main
-```
-
-Falls die Datei noch nicht existiert, kann sie erstellt werden:
+### 1. Install the package
 
 ```bash
-echo 'git+https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git@main' | sudo tee -a /opt/netbox/local_requirements.txt
+/opt/netbox/venv/bin/pip install --upgrade --force-reinstall \
+  "git+https://git.mrblake.cc/MrBlake/Netbox-Documentation.git@main"
 ```
 
-Danach die lokalen Abhängigkeiten installieren:
+For reproducible production installs, replace `main` with a release tag or a
+full commit ID.
+
+### 2. Add the plugin to `local_requirements.txt`
+
+This makes `upgrade.sh` reinstall the plugin automatically on every NetBox upgrade:
 
 ```bash
-source /opt/netbox/venv/bin/activate
-pip install -r /opt/netbox/local_requirements.txt
+grep -qxF "git+https://git.mrblake.cc/MrBlake/Netbox-Documentation.git@main" /opt/netbox/local_requirements.txt \
+  || echo "git+https://git.mrblake.cc/MrBlake/Netbox-Documentation.git@main" | sudo tee -a /opt/netbox/local_requirements.txt
 ```
 
-Bei einem privaten Repository muss der NetBox-Server Zugriff auf das Repository besitzen. Zugangsdaten sollten nicht direkt in `local_requirements.txt` gespeichert werden; stattdessen sollte ein geeigneter Git-Credential-Helper oder ein nur lesbarer Deployment-Zugang verwendet werden.
+If the repository is private, the NetBox server needs a read-only deploy token
+or an SSH key. Do not store credentials in `local_requirements.txt`.
 
-### Plugin aktualisieren
+### 3. Enable the plugin
 
-Das Plugin kann direkt aus dem `main`-Branch des HTTPS-Git-Repositorys aktualisiert werden. Zuerst das NetBox-Virtualenv aktivieren und anschließend das Paket mit `pip` aktualisieren:
-
-```bash
-source /opt/netbox/venv/bin/activate
-python -m pip install --upgrade "git+https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git@main"
-```
-
-Danach müssen mögliche neue Datenbankmigrationen und statische Dateien übernommen sowie die NetBox-Dienste neu gestartet werden:
-
-```bash
-cd /opt/netbox/netbox
-python manage.py migrate netbox_documentation
-python manage.py collectstatic --no-input
-sudo systemctl restart netbox netbox-rq
-```
-
-Die installierte Plugin-Version kann anschließend geprüft werden:
-
-```bash
-python -m pip show netbox-documentation
-python manage.py showmigrations netbox_documentation
-```
-
-Falls ein korrigierter Stand mit unveränderter Versionsnummer erneut installiert werden muss, kann die Installation einmalig erzwungen werden:
-
-```bash
-source /opt/netbox/venv/bin/activate
-python -m pip install --upgrade --force-reinstall "git+https://git.mrblake.cc/MrBlake/Netbox-DokiWiki.git@main"
-```
-
-Der Eintrag in `/opt/netbox/local_requirements.txt` bleibt dabei unverändert und sollte weiterhin auf denselben Git-Branch zeigen.
-
-### NetBox konfigurieren
-
-In `configuration.py`:
+In `/opt/netbox/netbox/netbox/configuration.py`:
 
 ```python
 PLUGINS = [
@@ -123,86 +92,177 @@ PLUGINS_CONFIG = {
             "virtualization.cluster",
             "tenancy.tenant",
         ],
-    }
+    },
 }
 ```
 
-TinyMCE wird als Python-Abhängigkeit des Plugins installiert und über einen lokalen, gecachten Plugin-Endpunkt bereitgestellt. `collectstatic` übernimmt die Dateien zusätzlich in NetBox. Der Editor benötigt deshalb weder Zugriff auf ein CDN noch einen API-Key. Das verwendete TinyMCE wird im GPL-Modus betrieben. Kann das Script nicht geladen werden, bleibt als Rückfall ein normales HTML-Textfeld verfügbar.
+If other plugins are already configured, add `netbox_documentation` to the
+existing list and dictionary instead of replacing them.
 
-Danach die Migrationen und statischen Dateien aktualisieren und NetBox neu starten:
+### 4. Apply migrations, collect static files, restart
 
 ```bash
 cd /opt/netbox/netbox
-python manage.py migrate
-python manage.py collectstatic --no-input
+/opt/netbox/venv/bin/python manage.py migrate netbox_documentation
+/opt/netbox/venv/bin/python manage.py collectstatic --no-input
 sudo systemctl restart netbox netbox-rq
 ```
 
-Für Docker-Installationen das Paket in das NetBox-Image aufnehmen, Plugin und Konfiguration setzen und anschließend das Image neu bauen. Die hochgeladenen Originaldateien liegen im konfigurierten NetBox-`MEDIA_ROOT`; dieses Verzeichnis muss persistent gespeichert und gesichert werden.
+TinyMCE is installed as a Python dependency and served via a local, cached
+plugin endpoint; `collectstatic` also copies the files into NetBox. The editor
+therefore needs neither CDN access nor an API key (TinyMCE runs in GPL mode). If
+the script cannot be loaded, a plain HTML text field is used as a fallback.
 
-## Berechtigungen
+For Docker installations, add the package to your NetBox image, set plugin and
+configuration, and rebuild the image. Uploaded files live in NetBox's
+`MEDIA_ROOT`, which must be persistent and backed up.
 
-Die benötigten Rechte können in NetBox unter **Admin → Benutzer → Berechtigungen** vergeben werden:
+## Update
+
+```bash
+/opt/netbox/venv/bin/pip install --upgrade --force-reinstall \
+  "git+https://git.mrblake.cc/MrBlake/Netbox-Documentation.git@main"
+
+cd /opt/netbox/netbox
+/opt/netbox/venv/bin/python manage.py migrate netbox_documentation
+/opt/netbox/venv/bin/python manage.py collectstatic --no-input
+sudo systemctl restart netbox netbox-rq
+```
+
+`--force-reinstall` makes pip pick up branch changes even if the package
+version has not been bumped.
+
+When NetBox itself is upgraded, `upgrade.sh` reinstalls the plugin from
+`local_requirements.txt` and runs migrations and `collectstatic`:
+
+```bash
+sudo /opt/netbox/upgrade.sh
+sudo systemctl restart netbox netbox-rq
+```
+
+Check the installed version and migrations:
+
+```bash
+/opt/netbox/venv/bin/pip show netbox-documentation
+cd /opt/netbox/netbox
+/opt/netbox/venv/bin/python manage.py showmigrations netbox_documentation
+```
+
+> **Migrating from the old repository name:** earlier versions were installed
+> from `Netbox-DokiWiki.git`. Replace that line in
+> `/opt/netbox/local_requirements.txt` with the URL above.
+
+## Uninstall
+
+1. Remove `"netbox_documentation"` from `PLUGINS` and `PLUGINS_CONFIG`.
+2. Remove the line from `/opt/netbox/local_requirements.txt`.
+3. Uninstall the package and restart NetBox:
+
+```bash
+/opt/netbox/venv/bin/pip uninstall netbox-documentation
+sudo systemctl restart netbox netbox-rq
+```
+
+## Configuration
+
+| Key | Default | Description |
+|---|---|---|
+| `max_import_size_mb` | `25` | Maximum size of a single imported file |
+| `max_archive_size_mb` | `250` | Maximum size of a ZIP archive import |
+| `keep_imported_file` | `True` | Keep the original file as an attachment |
+| `allowed_object_types` | see above | Object types documents can be assigned to |
+
+## Usage
+
+### Permissions
+
+Grant permissions under **Admin → Users → Permissions**:
 
 - `netbox_documentation.view_document`
 - `netbox_documentation.add_document`, `change_document`, `delete_document`
-- `netbox_documentation.view_documentassignment` sowie die entsprechenden Änderungsrechte
-- `netbox_documentation.import_document` für Office-/PDF-Importe
+- `netbox_documentation.view_documentassignment` and the corresponding change permissions
+- `netbox_documentation.import_document` for Office/PDF imports
 
-Objektbezogene NetBox-Constraints sollten zusätzlich passend zu Mandanten und Verantwortungsbereichen gesetzt werden. Nicht veröffentlichte Dokumente sind als Redaktionsstatus gedacht; sie ersetzen keine Objektberechtigung.
+Set object-level constraints matching your tenants and areas of responsibility.
+Unpublished documents are an editorial status, not a replacement for object
+permissions.
 
-## Importverhalten
+### Import behaviour
 
-| Format | Übernahme |
+| Format | Imported content |
 |---|---|
-| DOCX | Überschriften, Absätze, Listen, Links und einfache Tabellen nach Markdown |
-| XLSX/XLSM | Jedes Tabellenblatt als eigene Markdown-Tabelle; Formelergebnisse nur, wenn Excel sie zuvor gespeichert hat |
-| PDF | Extrahierbarer Text, nach Seiten gegliedert |
-| MD/TXT | Direkte Übernahme (UTF-8) |
+| DOCX | Headings, paragraphs, lists, links and simple tables |
+| XLSX/XLSM | Each worksheet as its own table; formula results only if Excel saved them |
+| PDF | Extractable text, split by page |
+| MD/TXT | Taken over directly (UTF-8) |
 
-Alte binäre `.doc`- und `.xls`-Dateien müssen vorher in `.docx` bzw. `.xlsx` konvertiert werden. Gescannte PDFs benötigen OCR, die in dieser Version bewusst noch nicht enthalten ist. Komplexe Word-/PDF-Layouts, eingebettete Bilder und Excel-Formatierungen können nicht verlustfrei nach Markdown übertragen werden.
+Legacy binary `.doc` and `.xls` files must be converted to `.docx`/`.xlsx`
+first. Scanned PDFs require OCR, which is not included yet. Complex Word/PDF
+layouts, embedded images and Excel formatting cannot be converted losslessly.
 
-Für große Excel-Dateien kann auf der Importseite **„Excel mit mehreren Arbeitsblättern – je Blatt eine Dokumentation“** aktiviert werden. Dazu ist ein Zielordner verpflichtend. Jedes nicht leere Arbeitsblatt wird als eigene Dokumentation mit dem Blattnamen als Titel angelegt und erhält eine eigene Kopie der Original-Exceldatei als Anhang. Normale eingebettete PNG-, JPEG-, GIF- und WebP-Bilder werden dem jeweiligen Dokument als Medienanhang hinzugefügt. Diagramme, SmartArt, Steuerelemente und extern verknüpfte Bilder können nicht zuverlässig übernommen werden.
+For large Excel files, enable **"Excel with multiple worksheets — one document
+per sheet"** on the import page (a target folder is required). Every non-empty
+worksheet becomes its own document titled after the sheet, with its own copy of
+the original Excel file attached. Embedded PNG, JPEG, GIF and WebP images are
+added as media attachments; charts, SmartArt, controls and externally linked
+images cannot be imported reliably.
 
-Vor dem Anlegen erscheint eine Vorschauseite mit allen erkannten Arbeitsblättern. Dort können einzelne Blätter abgewählt, die zukünftigen Dokumenttitel geändert und die jeweils erzeugte Dokumentation aufgeklappt werden. Erst die abschließende Bestätigung schreibt Dokumentationen und Anhänge in die Datenbank. Nicht bestätigte Vorschauen sind an den Benutzer gebunden und werden nach 24 Stunden bereinigt.
+A preview page lists all detected worksheets first. Sheets can be deselected,
+titles changed and the resulting documents expanded. Only the final
+confirmation writes documents and attachments to the database. Unconfirmed
+previews are bound to the user and cleaned up after 24 hours.
 
-Mit **„Excel-Tabellen glätten“** werden normale Zellen ohne künstliche Datensatz- oder Feldbezeichnungen in ihrer Lesereihenfolge übernommen. Zellen einer Excel-Zeile erscheinen als einzelne Textzeilen eines Absatzes; zwischen Excel-Zeilen wird ein Absatz eingefügt. Bereiche, die in Excel ausdrücklich über **Einfügen → Tabelle** als strukturierte Tabelle gekennzeichnet wurden, bleiben dagegen als Tabelle erhalten. Rein optisch mit Rahmen oder Farben formatierte Bereiche gelten nicht als Tabelle. Nicht geglättete Tabellen werden in der Dokumentansicht automatisch kompakt dargestellt und bei Bedarf innerhalb des Inhalts horizontal scrollbar, ohne das NetBox-Layout zu verbreitern.
+**"Flatten Excel tables"** takes over normal cells in reading order without
+artificial record or field labels: cells of one row become lines of a paragraph,
+rows are separated by paragraphs. Ranges explicitly formatted as a table in
+Excel (**Insert → Table**) stay tables. Non-flattened tables are shown compactly
+and scroll horizontally inside the content without widening the NetBox layout.
 
-## REST-API
+### ZIP archive
 
-Nach Aktivierung stehen die üblichen NetBox-Plugin-Endpunkte bereit:
+Under **Documentation → ZIP Export & Import**, multiple folders can be added via
+a search field and downloaded together, optionally including all sub-folders.
+Documents found by overlapping folder selections are included only once. The
+archive contains:
+
+- document content and metadata
+- full folder paths
+- assignments to NetBox objects
+- imported files and editor images
+
+On import, choose whether documents with the same identifier are updated or
+created as new copies. Assignments to missing or disallowed objects are skipped.
+Embedded image URLs are rewritten to the newly stored attachments.
+
+Archives are checked for safe paths, file count, file types, compression ratio
+and total extracted size before import. The size limit is set with
+`max_archive_size_mb`.
+
+### REST API
 
 - `/api/plugins/documentation/documents/`
 - `/api/plugins/documentation/assignments/`
 - `/api/plugins/documentation/folders/`
 - `/api/plugins/documentation/attachments/`
 
-## ZIP-Archiv
-
-Unter **Dokumentation → ZIP Export & Import** können mehrere Ordner über ein Suchfeld hinzugefügt und gemeinsam heruntergeladen werden. Optional werden alle Unterordner rekursiv einbezogen. Dokumentationen, die durch überlappende Ordnerauswahlen mehrfach gefunden werden, landen nur einmal im Archiv. Das Archiv enthält:
-
-- Dokumentinhalt und Metadaten
-- vollständige Ordnerpfade
-- Zuordnungen zu NetBox-Objekten
-- importierte Dateien und Editor-Bilder
-
-Beim Import kann gewählt werden, ob Dokumentationen mit derselben Kennung aktualisiert oder als neue Kopie angelegt werden. Zuordnungen zu nicht vorhandenen beziehungsweise nicht erlaubten NetBox-Objekten werden übersprungen. Eingebettete Bild-URLs werden auf die neu gespeicherten Anhänge umgeschrieben.
-
-Archive werden vor dem Import auf sichere Pfade, Dateianzahl, Dateitypen, Kompressionsverhältnis und entpackte Gesamtgröße geprüft. Das Größenlimit wird mit `max_archive_size_mb` in `PLUGINS_CONFIG` festgelegt.
-
-## Entwicklung und Tests
+## Development and tests
 
 ```bash
 pip install -e ".[test]"
 pytest
 ```
 
-Für vollständige UI-/API-Tests muss NetBox im selben Virtualenv verfügbar sein. Die reinen Importtests befinden sich unter `netbox_documentation/tests/`.
+Full UI/API tests require NetBox in the same virtualenv. The pure import tests
+are located in `netbox_documentation/tests/`.
 
-## Nächste sinnvolle Ausbaustufen
+## Roadmap
 
-- OCR für gescannte PDFs (z. B. Tesseract/OCRmyPDF als optionaler Worker)
-- eingebettete DOCX-Bilder als NetBox-Medien übernehmen
-- echte Dokumentrevisionen mit Vergleich und Freigabeprozess
-- asynchroner Massenimport großer Excel-Bestände über NetBox-RQ
-- Vorlagen und automatisch vererbte Dokumentation entlang Region → Standort → Gerät
+- OCR for scanned PDFs (e.g. Tesseract/OCRmyPDF as an optional worker)
+- Import embedded DOCX images as NetBox media
+- Real document revisions with diff and approval workflow
+- Asynchronous bulk import of large Excel datasets via NetBox RQ
+- Templates and inherited documentation along region → site → device
+
+## License
+
+Apache License 2.0.
