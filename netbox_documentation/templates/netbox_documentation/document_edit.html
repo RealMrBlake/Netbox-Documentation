@@ -31,10 +31,10 @@
         license_key: 'gpl',
         height: 650,
         menubar: 'file edit view insert format tools table help',
-        plugins: 'advlist anchor autolink charmap code fullscreen image link lists media preview searchreplace table visualblocks wordcount',
+        plugins: 'advlist anchor autolink charmap code codesample fullscreen image link lists media preview searchreplace table visualblocks wordcount',
         toolbar: [
           'undo redo | blocks styles fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor',
-          'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table tablecellcolor link image media | removeformat code fullscreen'
+          'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table tablecellcolor link image media codesample | removeformat code fullscreen'
         ],
         toolbar_mode: 'sliding',
         table_toolbar: 'tableprops tablecellprops tablecellcolor | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol | tablemergecells tablesplitcells | tabledelete',
@@ -88,9 +88,24 @@
           .doc-cell-red { background: #ffe3e3 !important; }
           .doc-cell-blue { background: #dbeafe !important; }
           .doc-cell-middle { vertical-align: middle !important; }
+          pre { background: #1e1e1e; color: #e9ecef; padding: .75rem 1rem; border-radius: 6px; font-family: Consolas, 'Courier New', monospace; font-size: 10pt; white-space: pre-wrap; }
+          pre ::selection, pre::selection { background: #4c8bf5; color: #fff; }
         `,
+        codesample_global_prismjs: false,
+        codesample_languages: [
+          {text: 'Bash / Shell', value: 'bash'},
+          {text: 'PowerShell', value: 'powershell'},
+          {text: 'Cisco / Netzwerk-Konfiguration', value: 'none'},
+          {text: 'Python', value: 'python'},
+          {text: 'JSON', value: 'json'},
+          {text: 'YAML', value: 'yaml'},
+          {text: 'SQL', value: 'sql'},
+          {text: 'HTML/XML', value: 'markup'},
+          {text: 'JavaScript', value: 'javascript'},
+          {text: 'Nur Text', value: 'plaintext'}
+        ],
         browser_spellcheck: true,
-        contextmenu: 'link image table',
+        contextmenu: 'link image table codesample',
         promotion: false,
         branding: false,
         convert_unsafe_embeds: true,
