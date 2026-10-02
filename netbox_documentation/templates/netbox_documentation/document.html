@@ -153,8 +153,7 @@
         copyButton.className = 'doc-code-copy';
         copyButton.innerHTML = '<i class="mdi mdi-content-copy"></i> Kopieren';
         copyButton.addEventListener('click', async () => {
-          const text = pre.innerText.replace(/
-$/, '');
+          const text = pre.innerText.trimEnd();
           try {
             await navigator.clipboard.writeText(text);
           } catch (error) {

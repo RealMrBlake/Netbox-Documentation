@@ -5,7 +5,7 @@ class DocumentationConfig(PluginConfig):
     name = "netbox_documentation"
     verbose_name = "NetBox Dokumentation"
     description = "Wiki und Office-Dokumentation direkt in NetBox"
-    version = "0.11.1"
+    version = "0.12.0"
     author = "LKE"
     base_url = "documentation"
     min_version = "4.0.0"
