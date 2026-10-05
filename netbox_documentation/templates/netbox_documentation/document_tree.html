@@ -48,7 +48,8 @@
       {% for node in tree %}
         {% include 'netbox_documentation/inc/explorer_pane.html' with node=node parent='root' %}
       {% endfor %}
-      <p class="text-muted d-none mb-0" id="doc-explorer-nomatch">Keine Treffer in diesem Ordner.</p>
+      <div class="netbox-explorer-pane d-none" id="doc-explorer-results"></div>
+      <p class="text-muted d-none mb-0" id="doc-explorer-nomatch">Keine Treffer gefunden.</p>
     </section>
   </div>
   <div class="card-footer py-1 small text-muted" id="doc-explorer-status"></div>
@@ -101,6 +102,7 @@
   .netbox-explorer-tile:focus { background-color: rgba(var(--tblr-primary-rgb, 32,107,196), .18); border-color: rgba(var(--tblr-primary-rgb, 32,107,196), .4); outline: none; }
   .netbox-explorer-icon { font-size: 3.25rem; line-height: 1; }
   .netbox-explorer-label { word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .netbox-explorer-path { font-size: .75rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .netbox-explorer-empty { grid-column: 1 / -1; }
   .netbox-explorer-address { display: flex; align-items: center; flex-wrap: wrap; gap: .15rem; border: 1px solid var(--tblr-border-color, #dee2e6); border-radius: .25rem; padding: .15rem .5rem; min-height: 2rem; }
   .netbox-explorer-address a { cursor: pointer; }
@@ -177,21 +179,48 @@ document.addEventListener('DOMContentLoaded', function () {
     if (parent) openFolder(parent);
   }
 
-  function updateStatus() {
-    var tiles = pane(current).querySelectorAll('.netbox-explorer-tile:not(.d-none)');
+  function folderPath(p) {
+    var names = [];
+    while (p) { names.unshift(p.dataset.title); p = p.dataset.parent ? pane(p.dataset.parent) : null; }
+    return names.join(' › ');
+  }
+
+  function updateStatus(container, prefix) {
+    var tiles = container.querySelectorAll('.netbox-explorer-tile:not(.d-none)');
     var folders = 0, files = 0;
     tiles.forEach(function (t) { if (t.dataset.open) { folders++; } else { files++; } });
-    document.getElementById('doc-explorer-status').textContent = folders + ' Ordner, ' + files + ' Dokument(e)';
+    document.getElementById('doc-explorer-status').textContent = (prefix || '') + folders + ' Ordner, ' + files + ' Dokument(e)';
     document.getElementById('doc-explorer-nomatch').classList.toggle('d-none', tiles.length > 0 || !input.value.trim());
   }
 
+  // Searches across all folders: matching tiles are copied into a results pane, each labelled with its folder path.
   function applySearch() {
     if (!explorer || view !== 'explorer') return;
     var term = input ? input.value.trim().toLowerCase() : '';
-    pane(current).querySelectorAll('.netbox-explorer-tile').forEach(function (tile) {
-      tile.classList.toggle('d-none', !!term && tile.dataset.name.indexOf(term) === -1);
+    var results = document.getElementById('doc-explorer-results');
+    results.innerHTML = '';
+    if (!term) {
+      results.classList.add('d-none');
+      pane(current).classList.remove('d-none');
+      updateStatus(pane(current));
+      return;
+    }
+    explorer.querySelectorAll('.netbox-explorer-pane[data-folder]').forEach(function (p) {
+      p.classList.add('d-none');
+      p.querySelectorAll('.netbox-explorer-tile').forEach(function (tile) {
+        if (tile.dataset.name.indexOf(term) === -1) return;
+        var copy = tile.cloneNode(true);
+        copy.classList.remove('d-none');
+        var where = document.createElement('small');
+        where.className = 'text-muted netbox-explorer-path';
+        where.innerHTML = '<i class="mdi mdi-folder-outline"></i> ';
+        where.appendChild(document.createTextNode(folderPath(p)));
+        copy.appendChild(where);
+        results.appendChild(copy);
+      });
     });
-    updateStatus();
+    results.classList.remove('d-none');
+    updateStatus(results, 'Suchergebnisse in allen Ordnern: ');
   }
 
   if (explorer) {
@@ -200,7 +229,9 @@ document.addEventListener('DOMContentLoaded', function () {
       if (row && e.target.closest('.netbox-explorer-twisty')) { toggleNav(row); return; }
       if (row) { openFolder(row.dataset.folder); return; }
       var target = e.target.closest('.netbox-explorer-address [data-open], .netbox-explorer-tile[data-open]');
-      if (target) openFolder(target.dataset.open);
+      if (!target) return;
+      if (target.closest('#doc-explorer-results')) input.value = '';
+      openFolder(target.dataset.open);
     });
     explorer.addEventListener('keydown', function (e) {
       var tile = e.target.closest('.netbox-explorer-tile[data-open]');
