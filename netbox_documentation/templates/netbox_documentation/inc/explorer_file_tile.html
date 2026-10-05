@@ -1,0 +1,6 @@
+<a class="netbox-explorer-tile" href="{{ document.get_absolute_url }}" data-name="{{ document.title|lower }}" title="{{ document.title }}">
+  <i class="mdi mdi-file-document-outline netbox-explorer-icon text-primary"></i>
+  <span class="netbox-explorer-label">{{ document.title }}</span>
+  {% if not document.is_published %}<span class="badge text-bg-warning">Entwurf</span>{% endif %}
+  {% if document.tenant %}<small class="text-muted text-truncate mw-100"><i class="mdi mdi-domain"></i> {{ document.tenant }}</small>{% endif %}
+</a>

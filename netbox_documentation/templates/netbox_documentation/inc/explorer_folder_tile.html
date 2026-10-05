@@ -1,0 +1,5 @@
+<div class="netbox-explorer-tile" data-open="{{ node.object.pk }}" data-name="{{ node.object.name|lower }}" title="{{ node.object.name }}" tabindex="0">
+  <i class="mdi {% if node.children or node.documents %}mdi-folder{% else %}mdi-folder-outline{% endif %} netbox-explorer-icon text-warning"></i>
+  <span class="netbox-explorer-label">{{ node.object.name }}</span>
+  <small class="text-muted">{% with c=node.children|length d=node.documents|length %}{{ c|add:d }}{% endwith %} Element(e)</small>
+</div>

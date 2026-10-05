@@ -1,0 +1,14 @@
+<li>
+  <div class="netbox-explorer-nav-row" data-folder="{{ node.object.pk }}">
+    {% if node.children %}<i class="mdi mdi-chevron-right netbox-explorer-twisty"></i>{% else %}<span class="netbox-explorer-twisty"></span>{% endif %}
+    <i class="mdi mdi-folder text-warning"></i>
+    <span class="text-truncate">{{ node.object.name }}</span>
+  </div>
+  {% if node.children %}
+  <ul class="list-unstyled d-none">
+    {% for child in node.children %}
+      {% include 'netbox_documentation/inc/explorer_nav_node.html' with node=child %}
+    {% endfor %}
+  </ul>
+  {% endif %}
+</li>

@@ -10,11 +10,52 @@
       {% if perms.netbox_documentation.add_document %}
       <a href="{% url 'plugins:netbox_documentation:document_add' %}" class="btn btn-success"><i class="mdi mdi-plus-thick"></i> Hinzufügen</a>
       {% endif %}
-      <a href="{% url 'plugins:netbox_documentation:document_list' %}" class="btn btn-outline-secondary"><i class="mdi mdi-format-list-bulleted"></i> Listenansicht</a>
+      <div class="btn-group" role="group" aria-label="Ansicht">
+        <button type="button" class="btn btn-outline-secondary" data-view="explorer" title="Explorer-Ansicht"><i class="mdi mdi-view-grid-outline"></i> Explorer</button>
+        <button type="button" class="btn btn-outline-secondary" data-view="tree" title="Baumansicht"><i class="mdi mdi-file-tree"></i> Baum</button>
+        <a href="{% url 'plugins:netbox_documentation:document_list' %}" class="btn btn-outline-secondary" title="Listenansicht"><i class="mdi mdi-format-list-bulleted"></i> Liste</a>
+      </div>
     </div>
   </div>
 </div>
-<div class="card">
+
+{% if tree or uncategorized %}
+<div class="card netbox-explorer" id="doc-explorer" hidden>
+  <div class="card-header d-flex align-items-center gap-2 py-2">
+    <button type="button" class="btn btn-sm btn-ghost-secondary" id="doc-explorer-back" title="Zurück"><i class="mdi mdi-arrow-left"></i></button>
+    <button type="button" class="btn btn-sm btn-ghost-secondary" id="doc-explorer-up" title="Übergeordneter Ordner (Rücktaste)"><i class="mdi mdi-arrow-up"></i></button>
+    <nav class="netbox-explorer-address flex-grow-1" id="doc-explorer-address"></nav>
+    <a href="#" class="btn btn-sm btn-ghost-secondary d-none" id="doc-explorer-props" title="Ordnerdetails"><i class="mdi mdi-information-outline"></i></a>
+  </div>
+  <div class="netbox-explorer-body">
+    <aside class="netbox-explorer-nav">
+      <div class="netbox-explorer-nav-row" data-folder="root"><span class="netbox-explorer-twisty"></span><i class="mdi mdi-folder-home text-warning"></i><span>Dokumentationen</span></div>
+      <ul class="list-unstyled mb-0">
+        {% for node in tree %}
+          {% include 'netbox_documentation/inc/explorer_nav_node.html' with node=node %}
+        {% endfor %}
+      </ul>
+    </aside>
+    <section class="netbox-explorer-content">
+      <div class="netbox-explorer-pane" data-folder="root" data-parent="" data-title="Dokumentationen">
+        {% for node in tree %}
+          {% include 'netbox_documentation/inc/explorer_folder_tile.html' with node=node %}
+        {% endfor %}
+        {% for document in uncategorized %}
+          {% include 'netbox_documentation/inc/explorer_file_tile.html' with document=document %}
+        {% endfor %}
+      </div>
+      {% for node in tree %}
+        {% include 'netbox_documentation/inc/explorer_pane.html' with node=node parent='root' %}
+      {% endfor %}
+      <p class="text-muted d-none mb-0" id="doc-explorer-nomatch">Keine Treffer in diesem Ordner.</p>
+    </section>
+  </div>
+  <div class="card-footer py-1 small text-muted" id="doc-explorer-status"></div>
+</div>
+{% endif %}
+
+<div class="card" id="doc-tree-view">
   <div class="card-body">
     {% if tree or uncategorized %}
     <ul class="netbox-doc-tree list-unstyled mb-0">
@@ -43,13 +84,156 @@
   .netbox-doc-tree-summary:hover { background-color: var(--tblr-bg-surface-secondary, rgba(0,0,0,.03)); }
   .netbox-doc-tree-leaf { margin-left: 1.35rem; }
   .netbox-doc-tree-empty { margin-left: 1.35rem; font-size: .875rem; }
+
+  /* Explorer view */
+  .netbox-explorer-body { display: flex; min-height: 28rem; }
+  .netbox-explorer-nav { width: 16rem; flex-shrink: 0; border-right: 1px solid var(--tblr-border-color, #dee2e6); padding: .5rem 0; overflow: auto; max-height: 70vh; }
+  .netbox-explorer-nav ul ul { padding-left: 1rem; }
+  .netbox-explorer-nav-row { display: flex; align-items: center; gap: .35rem; padding: .2rem .5rem; cursor: pointer; white-space: nowrap; user-select: none; }
+  .netbox-explorer-nav-row:hover { background-color: var(--tblr-bg-surface-secondary, rgba(0,0,0,.04)); }
+  .netbox-explorer-nav-row.active { background-color: rgba(var(--tblr-primary-rgb, 32,107,196), .15); }
+  .netbox-explorer-twisty { width: 1rem; flex-shrink: 0; display: inline-block; text-align: center; transition: transform .15s ease; }
+  .netbox-explorer-twisty.open { transform: rotate(90deg); }
+  .netbox-explorer-content { flex-grow: 1; padding: 1rem; overflow: auto; max-height: 70vh; }
+  .netbox-explorer-pane { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: .5rem; align-content: start; }
+  .netbox-explorer-tile { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .15rem; padding: .5rem .25rem; border: 1px solid transparent; border-radius: .25rem; cursor: pointer; color: inherit; text-decoration: none; user-select: none; }
+  .netbox-explorer-tile:hover { background-color: rgba(var(--tblr-primary-rgb, 32,107,196), .08); border-color: rgba(var(--tblr-primary-rgb, 32,107,196), .25); text-decoration: none; color: inherit; }
+  .netbox-explorer-tile:focus { background-color: rgba(var(--tblr-primary-rgb, 32,107,196), .18); border-color: rgba(var(--tblr-primary-rgb, 32,107,196), .4); outline: none; }
+  .netbox-explorer-icon { font-size: 3.25rem; line-height: 1; }
+  .netbox-explorer-label { word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .netbox-explorer-empty { grid-column: 1 / -1; }
+  .netbox-explorer-address { display: flex; align-items: center; flex-wrap: wrap; gap: .15rem; border: 1px solid var(--tblr-border-color, #dee2e6); border-radius: .25rem; padding: .15rem .5rem; min-height: 2rem; }
+  .netbox-explorer-address a { cursor: pointer; }
+  @media (max-width: 767px) { .netbox-explorer-nav { display: none; } }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var input = document.getElementById('doc-tree-search');
+  var explorer = document.getElementById('doc-explorer');
+  var treeView = document.getElementById('doc-tree-view');
+  var VIEW_KEY = 'netbox_documentation.view';
+  var view = 'explorer';
+  try { view = localStorage.getItem(VIEW_KEY) || 'explorer'; } catch (e) {}
+
+  // --- Explorer view ---
+  var current = 'root', backStack = [];
+  function pane(id) { return explorer.querySelector('.netbox-explorer-pane[data-folder="' + id + '"]'); }
+  function navRow(id) { return explorer.querySelector('.netbox-explorer-nav-row[data-folder="' + id + '"]'); }
+
+  function toggleNav(row, open) {
+    var sub = row && row.parentElement.querySelector(':scope > ul');
+    if (!sub) return;
+    var show = open === undefined ? sub.classList.contains('d-none') : open;
+    sub.classList.toggle('d-none', !show);
+    row.querySelector('.netbox-explorer-twisty').classList.toggle('open', show);
+  }
+
+  function openFolder(id, remember) {
+    var target = pane(id);
+    if (!target) return;
+    if (remember !== false && id !== current) backStack.push(current);
+    current = id;
+    explorer.querySelectorAll('.netbox-explorer-pane').forEach(function (p) {
+      p.classList.toggle('d-none', p !== target);
+    });
+
+    // Address bar (breadcrumb)
+    var parts = [], p = target;
+    while (p) { parts.unshift(p); p = p.dataset.parent ? pane(p.dataset.parent) : null; }
+    var address = document.getElementById('doc-explorer-address');
+    address.innerHTML = '';
+    parts.forEach(function (part, i) {
+      if (i) address.insertAdjacentHTML('beforeend', '<i class="mdi mdi-chevron-right text-muted"></i>');
+      var a = document.createElement('a');
+      a.textContent = part.dataset.title;
+      a.dataset.open = part.dataset.folder;
+      if (i === 0) a.insertAdjacentHTML('afterbegin', '<i class="mdi mdi-folder-home text-warning"></i> ');
+      address.appendChild(a);
+    });
+
+    // Navigation pane: highlight current folder and expand its ancestors
+    explorer.querySelectorAll('.netbox-explorer-nav-row.active').forEach(function (r) { r.classList.remove('active'); });
+    var row = navRow(id);
+    if (row) {
+      row.classList.add('active');
+      var li = row.parentElement.parentElement.closest('li');
+      while (li) {
+        toggleNav(li.querySelector(':scope > .netbox-explorer-nav-row'), true);
+        li = li.parentElement.closest('li');
+      }
+    }
+
+    document.getElementById('doc-explorer-up').disabled = !target.dataset.parent;
+    document.getElementById('doc-explorer-back').disabled = !backStack.length;
+    var props = document.getElementById('doc-explorer-props');
+    props.classList.toggle('d-none', !target.dataset.url);
+    if (target.dataset.url) props.href = target.dataset.url;
+    applySearch();
+  }
+
+  function goUp() {
+    var parent = pane(current).dataset.parent;
+    if (parent) openFolder(parent);
+  }
+
+  function updateStatus() {
+    var tiles = pane(current).querySelectorAll('.netbox-explorer-tile:not(.d-none)');
+    var folders = 0, files = 0;
+    tiles.forEach(function (t) { if (t.dataset.open) { folders++; } else { files++; } });
+    document.getElementById('doc-explorer-status').textContent = folders + ' Ordner, ' + files + ' Dokument(e)';
+    document.getElementById('doc-explorer-nomatch').classList.toggle('d-none', tiles.length > 0 || !input.value.trim());
+  }
+
+  function applySearch() {
+    if (!explorer || view !== 'explorer') return;
+    var term = input ? input.value.trim().toLowerCase() : '';
+    pane(current).querySelectorAll('.netbox-explorer-tile').forEach(function (tile) {
+      tile.classList.toggle('d-none', !!term && tile.dataset.name.indexOf(term) === -1);
+    });
+    updateStatus();
+  }
+
+  if (explorer) {
+    explorer.addEventListener('click', function (e) {
+      var row = e.target.closest('.netbox-explorer-nav-row');
+      if (row && e.target.closest('.netbox-explorer-twisty')) { toggleNav(row); return; }
+      if (row) { openFolder(row.dataset.folder); return; }
+      var target = e.target.closest('.netbox-explorer-address [data-open], .netbox-explorer-tile[data-open]');
+      if (target) openFolder(target.dataset.open);
+    });
+    explorer.addEventListener('keydown', function (e) {
+      var tile = e.target.closest('.netbox-explorer-tile[data-open]');
+      if (tile && e.key === 'Enter') openFolder(tile.dataset.open);
+      if (e.key === 'Backspace') { e.preventDefault(); goUp(); }
+    });
+    document.getElementById('doc-explorer-up').addEventListener('click', goUp);
+    document.getElementById('doc-explorer-back').addEventListener('click', function () {
+      if (backStack.length) openFolder(backStack.pop(), false);
+    });
+    openFolder('root', false);
+  }
+
+  // --- View switcher ---
+  function setView(v) {
+    view = explorer ? v : 'tree';
+    if (explorer) explorer.hidden = view !== 'explorer';
+    treeView.hidden = view === 'explorer';
+    document.querySelectorAll('[data-view]').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.view === view);
+    });
+    try { localStorage.setItem(VIEW_KEY, v); } catch (e) {}
+    applySearch();
+  }
+  document.querySelectorAll('[data-view]').forEach(function (b) {
+    b.addEventListener('click', function () { setView(b.dataset.view); });
+  });
+  setView(view);
+
+  // --- Tree view search ---
   if (!input) return;
   input.addEventListener('input', function () {
+    applySearch();
     var term = input.value.trim().toLowerCase();
     document.querySelectorAll('.netbox-doc-tree-item').forEach(function (li) {
       var match = !term || li.dataset.name.indexOf(term) !== -1;
