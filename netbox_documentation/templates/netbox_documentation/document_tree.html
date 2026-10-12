@@ -8,7 +8,10 @@
     <input type="search" id="doc-tree-search" class="form-control" style="max-width: 20rem;" placeholder="Dokumente & Ordner durchsuchen…">
     <div class="d-flex gap-2">
       {% if perms.netbox_documentation.add_document %}
-      <a href="{% url 'plugins:netbox_documentation:document_add' %}" class="btn btn-success"><i class="mdi mdi-plus-thick"></i> Hinzufügen</a>
+      <a href="{% url 'plugins:netbox_documentation:document_add' %}" class="btn btn-success" id="doc-add-document" data-base="{% url 'plugins:netbox_documentation:document_add' %}"><i class="mdi mdi-plus-thick"></i> Hinzufügen</a>
+      {% endif %}
+      {% if perms.netbox_documentation.add_documentcategory %}
+      <a href="{% url 'plugins:netbox_documentation:documentcategory_add' %}" class="btn btn-outline-success" id="doc-add-folder" data-base="{% url 'plugins:netbox_documentation:documentcategory_add' %}"><i class="mdi mdi-folder-plus-outline"></i> Neuer Ordner</a>
       {% endif %}
       <div class="btn-group" role="group" aria-label="Ansicht">
         <button type="button" class="btn btn-outline-secondary" data-view="explorer" title="Explorer-Ansicht"><i class="mdi mdi-view-grid-outline"></i> Explorer</button>
@@ -171,7 +174,23 @@ document.addEventListener('DOMContentLoaded', function () {
     var props = document.getElementById('doc-explorer-props');
     props.classList.toggle('d-none', !target.dataset.url);
     if (target.dataset.url) props.href = target.dataset.url;
+    updateAddLinks();
     applySearch();
+  }
+
+  // Point "Hinzufügen" / "Neuer Ordner" at the open folder and return here afterwards.
+  function updateAddLinks() {
+    var folder = current === 'root' ? '' : current;
+    var back = window.location.pathname + (folder ? '?folder=' + folder : '');
+    [['doc-add-document', 'category'], ['doc-add-folder', 'parent']].forEach(function (cfg) {
+      var link = document.getElementById(cfg[0]);
+      if (!link) return;
+      var params = new URLSearchParams();
+      if (folder) params.set(cfg[1], folder);
+      params.set('return_url', back);
+      link.href = link.dataset.base + '?' + params.toString();
+    });
+    if (window.history.replaceState) window.history.replaceState(null, '', back);
   }
 
   function goUp() {
@@ -242,7 +261,8 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('doc-explorer-back').addEventListener('click', function () {
       if (backStack.length) openFolder(backStack.pop(), false);
     });
-    openFolder('root', false);
+    var startFolder = new URLSearchParams(window.location.search).get('folder');
+    openFolder(startFolder && pane(startFolder) ? startFolder : 'root', false);
   }
 
   // --- View switcher ---
