@@ -63,6 +63,29 @@
       border: 1px solid rgba(255,255,255,.25); border-radius: 4px;
     }
     .documentation-content .doc-code-copy:hover { background: rgba(255,255,255,.2); }
+    .documentation-content .doc-code-lang {
+      position: absolute; top: .55rem; right: 6.2rem;
+      font-size: .7rem; color: #9da5b4; text-transform: uppercase; letter-spacing: .03em;
+      pointer-events: none; user-select: none;
+    }
+    .documentation-content pre.doc-hl[data-lang] { padding-right: 11rem; }
+    /* Syntax highlighting (Pygments token classes) - VS Code "Dark+" colours */
+    .documentation-content pre.doc-hl { color: #d4d4d4 !important; }
+    .doc-hl .k, .doc-hl .kc, .doc-hl .kd, .doc-hl .kr, .doc-hl .kp, .doc-hl .ow, .doc-hl .nt, .doc-hl .bp { color: #569cd6; }
+    .doc-hl .kn, .doc-hl .cp, .doc-hl .cpf { color: #c586c0; }
+    .doc-hl .kt, .doc-hl .nc, .doc-hl .nn, .doc-hl .ne { color: #4ec9b0; }
+    .doc-hl .nf, .doc-hl .fm, .doc-hl .nb, .doc-hl .nd { color: #dcdcaa; }
+    .doc-hl .n, .doc-hl .nv, .doc-hl .vi, .doc-hl .vg, .doc-hl .vc, .doc-hl .na, .doc-hl .py, .doc-hl .nl { color: #9cdcfe; }
+    .doc-hl .s, .doc-hl .s1, .doc-hl .s2, .doc-hl .sa, .doc-hl .sb, .doc-hl .sc, .doc-hl .sd, .doc-hl .sh,
+    .doc-hl .si, .doc-hl .sx, .doc-hl .sr, .doc-hl .ss, .doc-hl .dl { color: #ce9178; }
+    .doc-hl .se { color: #d7ba7d; }
+    .doc-hl .m, .doc-hl .mi, .doc-hl .mf, .doc-hl .mh, .doc-hl .mo, .doc-hl .mb, .doc-hl .il { color: #b5cea8; }
+    .doc-hl .c, .doc-hl .c1, .doc-hl .cm, .doc-hl .ch, .doc-hl .cs, .doc-hl .sd { color: #6a9955; }
+    .doc-hl .o, .doc-hl .p { color: #d4d4d4; }
+    .doc-hl .gh, .doc-hl .gu { color: #569cd6; font-weight: bold; }
+    .doc-hl .gi { color: #b5cea8; }
+    .doc-hl .gd { color: #ce9178; }
+    .doc-hl .err { color: #f44747; }
     .documentation-content table { cursor: zoom-in; }
     #documentation-viewer.documentation-page-focus {
       position: fixed;
@@ -171,6 +194,12 @@
           setTimeout(() => { copyButton.innerHTML = '<i class="mdi mdi-content-copy"></i> Kopieren'; }, 1500);
         });
         wrapper.appendChild(copyButton);
+        if (pre.dataset.lang) {
+          const label = document.createElement('span');
+          label.className = 'doc-code-lang';
+          label.textContent = pre.dataset.lang;
+          wrapper.appendChild(label);
+        }
       });
       document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && viewer.classList.contains('documentation-page-focus')) closeViewer();

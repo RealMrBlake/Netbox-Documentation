@@ -15,6 +15,7 @@ dependencies = [
   "pypdf>=5,<7",
   "tabulate>=0.9,<1",
   "bleach[css]>=6.2,<7",
+  "Pygments>=2.15,<3",
   "markdown>=3.7,<4",
   "django-tinymce>=5,<6",
   "pillow>=10,<13",

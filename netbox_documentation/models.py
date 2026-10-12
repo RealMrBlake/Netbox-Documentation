@@ -68,7 +68,10 @@ class Document(NetBoxModel):
             "padding-left", "padding-right", "padding-top", "text-align", "text-decoration",
             "text-indent", "vertical-align", "white-space", "width",
         })
-        return bleach.clean(value, tags=tags, attributes=attributes, protocols=("http", "https", "mailto"), css_sanitizer=css)
+        from .highlighting import highlight_code_blocks
+
+        cleaned = bleach.clean(value, tags=tags, attributes=attributes, protocols=("http", "https", "mailto"), css_sanitizer=css)
+        return highlight_code_blocks(cleaned)
 
 
 class DocumentCategory(NetBoxModel):
