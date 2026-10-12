@@ -1,5 +1,6 @@
 <div class="netbox-explorer-tile" data-open="{{ node.object.pk }}" data-name="{{ node.object.name|lower }}" title="{{ node.object.name }}" tabindex="0"
      data-kind="folder" data-pk="{{ node.object.pk }}" data-url="{{ node.object.get_absolute_url }}"
+     data-tenant="{{ node.object.tenant_id|default:'' }}" data-tenant-name="{{ node.object.tenant|default:'' }}"
      {% if perms.netbox_documentation.change_documentcategory %}data-edit="{% url 'plugins:netbox_documentation:documentcategory_edit' pk=node.object.pk %}"{% endif %}
      {% if perms.netbox_documentation.delete_documentcategory %}data-delete="{% url 'plugins:netbox_documentation:documentcategory_delete' pk=node.object.pk %}"{% endif %}>
   <i class="mdi {% if node.children or node.documents %}mdi-folder{% else %}mdi-folder-outline{% endif %} netbox-explorer-icon text-warning"></i>

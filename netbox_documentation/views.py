@@ -6,7 +6,7 @@ import tinymce
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import FileResponse, Http404, JsonResponse
@@ -124,6 +124,35 @@ class DocumentEditView(generic.ObjectEditView):
     queryset = Document.objects.all()
     form = DocumentForm
     template_name = "netbox_documentation/document_edit.html"
+
+
+class DocumentMoveView(PermissionRequiredMixin, View):
+    """Move a document into another folder (drag & drop in the Explorer). The tenant never changes."""
+
+    permission_required = "netbox_documentation.change_document"
+
+    def post(self, request, pk):
+        document = get_object_or_404(Document.objects.restrict(request.user, "change"), pk=pk)
+        category_id = request.POST.get("category") or None
+        category = None
+        if category_id is not None:
+            category = DocumentCategory.objects.restrict(request.user, "view").filter(pk=category_id).first()
+            if category is None:
+                return JsonResponse({"error": "Der Zielordner existiert nicht."}, status=404)
+            if category.tenant_id and category.tenant_id != document.tenant_id:
+                return JsonResponse({
+                    "error": f"Der Ordner „{category.name}“ gehört zum Mandanten „{category.tenant}“. "
+                             f"Das Dokument muss im selben Mandanten bleiben.",
+                }, status=400)
+        if document.category_id != (category.pk if category else None):
+            document.snapshot()
+            document.category = category
+            try:
+                document.full_clean()
+            except ValidationError as error:
+                return JsonResponse({"error": " ".join(error.messages)}, status=400)
+            document.save()
+        return JsonResponse({"ok": True, "category": category.pk if category else None})
 
 
 class DocumentDeleteView(generic.ObjectDeleteView):

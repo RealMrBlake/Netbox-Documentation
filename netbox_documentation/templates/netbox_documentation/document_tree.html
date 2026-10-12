@@ -58,6 +58,7 @@
   <div class="card-footer py-1 small text-muted" id="doc-explorer-status"></div>
 </div>
 <div class="dropdown-menu netbox-explorer-menu" id="doc-explorer-menu" role="menu"></div>
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="doc-explorer-toasts" style="z-index: 1090;"></div>
 <form method="post" action="{% url 'plugins:netbox_documentation:document_archive' %}" id="doc-explorer-export" class="d-none">
   {% csrf_token %}
   <input type="hidden" name="action" value="export">
@@ -120,6 +121,10 @@
   .netbox-explorer-menu.show { display: block; }
   .netbox-explorer-menu .dropdown-item i { width: 1.25rem; display: inline-block; }
   .netbox-explorer-tile.context-target { background-color: rgba(var(--tblr-primary-rgb, 32,107,196), .18); border-color: rgba(var(--tblr-primary-rgb, 32,107,196), .4); }
+  .netbox-explorer-tile[draggable="true"] { cursor: grab; }
+  .netbox-explorer-tile.dragging { opacity: .4; }
+  .netbox-explorer-drop { background-color: rgba(var(--tblr-success-rgb, 47,179,68), .18) !important; outline: 2px dashed rgba(var(--tblr-success-rgb, 47,179,68), .8); outline-offset: -2px; }
+  .netbox-explorer-nodrop { background-color: rgba(var(--tblr-danger-rgb, 214,57,57), .12) !important; outline: 2px dashed rgba(var(--tblr-danger-rgb, 214,57,57), .7); outline-offset: -2px; cursor: not-allowed; }
   @media (max-width: 767px) { .netbox-explorer-nav { display: none; } }
 </style>
 
@@ -412,8 +417,124 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('resize', closeMenu);
   }
 
+  // --- Drag & drop: move documents between folders ---
+  function toast(message, ok) {
+    var box = document.getElementById('doc-explorer-toasts');
+    var el = document.createElement('div');
+    el.className = 'toast show align-items-center border-0 text-bg-' + (ok ? 'success' : 'danger');
+    el.setAttribute('role', 'alert');
+    el.innerHTML = '<div class="d-flex"><div class="toast-body"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" aria-label="Schließen"></button></div>';
+    el.querySelector('.toast-body').textContent = message;
+    el.querySelector('.btn-close').addEventListener('click', function () { el.remove(); });
+    box.appendChild(el);
+    setTimeout(function () { el.remove(); }, ok ? 3500 : 7000);
+  }
+
+  // Resolve a drop target element to a folder id ('root' or a pk).
+  function dropFolder(el) {
+    var t = el.closest('.netbox-explorer-tile[data-kind="folder"], .netbox-explorer-nav-row, .netbox-explorer-address [data-open]');
+    if (t) return t.dataset.open || t.dataset.folder;
+    if (el.closest('.netbox-explorer-content') && !document.getElementById('doc-explorer-results').contains(el) && !(input && input.value.trim())) return current;
+    return null;
+  }
+  function dropHighlight(el) {
+    return el.closest('.netbox-explorer-tile[data-kind="folder"], .netbox-explorer-nav-row, .netbox-explorer-address [data-open]') || el.closest('.netbox-explorer-content');
+  }
+  // Same rule as the server: a folder with a tenant only accepts documents of that tenant.
+  function tenantConflict(doc, folderId) {
+    if (folderId === 'root') return null;
+    var f = folderTile(folderId);
+    if (!f || !f.dataset.tenant || f.dataset.tenant === doc.dataset.tenant) return null;
+    return 'Der Ordner gehört zum Mandanten „' + f.dataset.tenantName + '“. Das Dokument muss im selben Mandanten bleiben.';
+  }
+  function originalTile(pk) { return explorer.querySelector('.netbox-explorer-pane[data-folder] .netbox-explorer-tile[data-kind="document"][data-pk="' + pk + '"]'); }
+
+  function refreshFolderTile(folderId) {
+    var f = folderTile(folderId), p = pane(folderId);
+    if (!p) return;
+    var count = p.querySelectorAll('.netbox-explorer-tile').length;
+    var empty = p.querySelector('.netbox-explorer-empty');
+    if (!count && !empty) p.insertAdjacentHTML('beforeend', '<p class="text-muted netbox-explorer-empty">Dieser Ordner ist leer.</p>');
+    if (count && empty) empty.remove();
+    if (!f) return;
+    f.querySelector('small').textContent = count + ' Element(e)';
+    var icon = f.querySelector('.netbox-explorer-icon');
+    icon.classList.toggle('mdi-folder', count > 0);
+    icon.classList.toggle('mdi-folder-outline', count === 0);
+  }
+
+  var dragged = null, lastHighlight = null;
+  function clearHighlight() {
+    if (lastHighlight) lastHighlight.classList.remove('netbox-explorer-drop', 'netbox-explorer-nodrop');
+    lastHighlight = null;
+  }
+
+  function moveDocument(doc, folderId) {
+    var source = doc.closest('.netbox-explorer-pane[data-folder]').dataset.folder;
+    if (source === folderId) return;
+    var conflict = tenantConflict(doc, folderId);
+    if (conflict) { toast(conflict, false); return; }
+    var body = new FormData();
+    body.append('category', folderId === 'root' ? '' : folderId);
+    body.append('csrfmiddlewaretoken', document.querySelector('#doc-explorer-export [name=csrfmiddlewaretoken]').value);
+    fetch(doc.dataset.move, { method: 'POST', body: body, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.json().catch(function () { return { error: 'Unerwartete Antwort vom Server (' + r.status + ').' }; }); })
+      .then(function (data) {
+        if (data.error) { toast(data.error, false); return; }
+        pane(folderId).appendChild(doc);
+        refreshFolderTile(source);
+        refreshFolderTile(folderId);
+        treeStale = true;
+        toast('„' + doc.title + '“ verschoben nach „' + pane(folderId).dataset.title + '“.', true);
+        applySearch();
+      })
+      .catch(function () { toast('Verschieben fehlgeschlagen – keine Verbindung zum Server.', false); });
+  }
+
+  if (explorer) {
+    explorer.addEventListener('dragstart', function (e) {
+      var tile = e.target.closest && e.target.closest('.netbox-explorer-tile[data-move]');
+      if (!tile) return;
+      dragged = originalTile(tile.dataset.pk);
+      closeMenu();
+      tile.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', tile.title);
+    });
+    explorer.addEventListener('dragend', function (e) {
+      if (e.target.classList) e.target.classList.remove('dragging');
+      dragged = null;
+      clearHighlight();
+    });
+    explorer.addEventListener('dragover', function (e) {
+      if (!dragged) return;
+      var folderId = dropFolder(e.target);
+      var el = folderId && dropHighlight(e.target);
+      if (el !== lastHighlight) clearHighlight();
+      if (!folderId) return;
+      var ok = !tenantConflict(dragged, folderId);
+      e.preventDefault();
+      e.dataTransfer.dropEffect = ok ? 'move' : 'none';
+      lastHighlight = el;
+      el.classList.add(ok ? 'netbox-explorer-drop' : 'netbox-explorer-nodrop');
+    });
+    explorer.addEventListener('drop', function (e) {
+      if (!dragged) return;
+      e.preventDefault();
+      var folderId = dropFolder(e.target);
+      clearHighlight();
+      if (folderId) moveDocument(dragged, folderId);
+    });
+  }
+
   // --- View switcher ---
+  var treeStale = false;
   function setView(v) {
+    if (v === 'tree' && treeStale) {
+      try { localStorage.setItem(VIEW_KEY, v); } catch (e) {}
+      window.location.reload();
+      return;
+    }
     view = explorer ? v : 'tree';
     if (explorer) explorer.hidden = view !== 'explorer';
     treeView.hidden = view === 'explorer';

@@ -16,6 +16,7 @@ urlpatterns = (
     path("documents/<int:pk>/print/", views.DocumentPrintView.as_view(), name="document_print"),
     path("documents/<int:pk>/edit/", views.DocumentEditView.as_view(), name="document_edit"),
     path("documents/<int:pk>/media-upload/", views.DocumentMediaUploadView.as_view(), name="document_media_upload"),
+    path("documents/<int:pk>/move/", views.DocumentMoveView.as_view(), name="document_move"),
     path("documents/<int:pk>/delete/", views.DocumentDeleteView.as_view(), name="document_delete"),
     path("documents/<int:pk>/changelog/", ObjectChangeLogView.as_view(), name="document_changelog", kwargs={"model": models.Document}),
     path("assignments/", views.AssignmentListView.as_view(), name="documentassignment_list"),
