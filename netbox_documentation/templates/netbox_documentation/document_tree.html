@@ -57,6 +57,13 @@
   </div>
   <div class="card-footer py-1 small text-muted" id="doc-explorer-status"></div>
 </div>
+<div class="dropdown-menu netbox-explorer-menu" id="doc-explorer-menu" role="menu"></div>
+<form method="post" action="{% url 'plugins:netbox_documentation:document_archive' %}" id="doc-explorer-export" class="d-none">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="export">
+  <input type="hidden" name="categories" value="">
+  <input type="hidden" name="include_subfolders" value="on">
+</form>
 {% endif %}
 
 <div class="card" id="doc-tree-view">
@@ -109,6 +116,10 @@
   .netbox-explorer-empty { grid-column: 1 / -1; }
   .netbox-explorer-address { display: flex; align-items: center; flex-wrap: wrap; gap: .15rem; border: 1px solid var(--tblr-border-color, #dee2e6); border-radius: .25rem; padding: .15rem .5rem; min-height: 2rem; }
   .netbox-explorer-address a { cursor: pointer; }
+  .netbox-explorer-menu { position: fixed; z-index: 1080; min-width: 14rem; }
+  .netbox-explorer-menu.show { display: block; }
+  .netbox-explorer-menu .dropdown-item i { width: 1.25rem; display: inline-block; }
+  .netbox-explorer-tile.context-target { background-color: rgba(var(--tblr-primary-rgb, 32,107,196), .18); border-color: rgba(var(--tblr-primary-rgb, 32,107,196), .4); }
   @media (max-width: 767px) { .netbox-explorer-nav { display: none; } }
 </style>
 
@@ -263,6 +274,142 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     var startFolder = new URLSearchParams(window.location.search).get('folder');
     openFolder(startFolder && pane(startFolder) ? startFolder : 'root', false);
+  }
+
+  // --- Context menu (right click) ---
+  var menu = document.getElementById('doc-explorer-menu');
+
+  function withReturn(url, extra) {
+    var params = new URLSearchParams(extra || {});
+    params.set('return_url', window.location.pathname + window.location.search);
+    return url + '?' + params.toString();
+  }
+  function go(url, newTab) { if (newTab) { window.open(url, '_blank'); } else { window.location.href = url; } }
+  function folderTile(pk) { return explorer.querySelector('.netbox-explorer-pane[data-folder] .netbox-explorer-tile[data-kind="folder"][data-pk="' + pk + '"]'); }
+
+  function exportFolder(pk) {
+    var form = document.getElementById('doc-explorer-export');
+    form.elements.categories.value = pk;
+    form.submit();
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text); return; }
+    var area = document.createElement('textarea');
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    area.remove();
+  }
+
+  // Menu entries for a folder tile, a document tile or (tile === null) the empty area of the open folder.
+  function itemsFor(tile) {
+    var addDoc = document.getElementById('doc-add-document');
+    var addFolder = document.getElementById('doc-add-folder');
+    if (!tile) {
+      var here = pane(current);
+      return [
+        addFolder && { icon: 'mdi-folder-plus-outline', label: 'Neuer Ordner', run: function () { go(addFolder.href); } },
+        addDoc && { icon: 'mdi-file-document-plus-outline', label: 'Neues Dokument', run: function () { go(addDoc.href); } },
+        '-',
+        here.dataset.parent && { icon: 'mdi-folder-zip-outline', label: 'Ordner als ZIP exportieren', run: function () { exportFolder(current); } },
+        here.dataset.url && { icon: 'mdi-information-outline', label: 'Ordnerdetails', run: function () { go(here.dataset.url); } },
+        '-',
+        { icon: 'mdi-refresh', label: 'Aktualisieren', run: function () { window.location.reload(); } }
+      ];
+    }
+    var d = tile.dataset;
+    if (d.kind === 'folder') {
+      return [
+        { icon: 'mdi-folder-open-outline', label: 'Öffnen', bold: true, run: function () { if (input) input.value = ''; openFolder(d.pk); } },
+        { icon: 'mdi-information-outline', label: 'Ordnerdetails', run: function () { go(d.url); } },
+        '-',
+        addFolder && { icon: 'mdi-folder-plus-outline', label: 'Neuer Unterordner', run: function () { go(withReturn(addFolder.dataset.base, { parent: d.pk })); } },
+        addDoc && { icon: 'mdi-file-document-plus-outline', label: 'Neues Dokument hier', run: function () { go(withReturn(addDoc.dataset.base, { category: d.pk })); } },
+        '-',
+        d.edit && { icon: 'mdi-rename-outline', label: 'Umbenennen / Bearbeiten', run: function () { go(withReturn(d.edit)); } },
+        { icon: 'mdi-folder-zip-outline', label: 'Als ZIP exportieren', run: function () { exportFolder(d.pk); } },
+        { icon: 'mdi-link-variant', label: 'Link kopieren', run: function () { copyText(window.location.origin + window.location.pathname + '?folder=' + d.pk); } },
+        '-',
+        d.delete && { icon: 'mdi-trash-can-outline', label: 'Löschen', danger: true, run: function () { go(withReturn(d.delete)); } }
+      ];
+    }
+    var href = tile.getAttribute('href');
+    return [
+      { icon: 'mdi-file-document-outline', label: 'Öffnen', bold: true, run: function () { go(href); } },
+      { icon: 'mdi-open-in-new', label: 'In neuem Tab öffnen', run: function () { go(href, true); } },
+      '-',
+      d.edit && { icon: 'mdi-rename-outline', label: 'Umbenennen / Bearbeiten', run: function () { go(withReturn(d.edit)); } },
+      { icon: 'mdi-printer-outline', label: 'Drucken / als PDF exportieren', run: function () { go(d.print, true); } },
+      { icon: 'mdi-link-variant', label: 'Link kopieren', run: function () { copyText(new URL(href, window.location.href).href); } },
+      '-',
+      d.delete && { icon: 'mdi-trash-can-outline', label: 'Löschen', danger: true, run: function () { go(withReturn(d.delete)); } }
+    ];
+  }
+
+  function closeMenu() {
+    if (!menu) return;
+    menu.classList.remove('show');
+    explorer.querySelectorAll('.context-target').forEach(function (t) { t.classList.remove('context-target'); });
+  }
+
+  function showMenu(x, y, tile) {
+    closeMenu();
+    menu.innerHTML = '';
+    itemsFor(tile).forEach(function (item) {
+      if (!item) return;
+      var lastIsDivider = !menu.lastElementChild || menu.lastElementChild.classList.contains('dropdown-divider');
+      if (item === '-') {
+        if (!lastIsDivider) menu.insertAdjacentHTML('beforeend', '<div class="dropdown-divider"></div>');
+        return;
+      }
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'dropdown-item' + (item.danger ? ' text-danger' : '') + (item.bold ? ' fw-bold' : '');
+      b.innerHTML = '<i class="mdi ' + item.icon + '"></i> ';
+      b.appendChild(document.createTextNode(item.label));
+      b.addEventListener('click', function () { closeMenu(); item.run(); });
+      menu.appendChild(b);
+    });
+    if (menu.lastElementChild && menu.lastElementChild.classList.contains('dropdown-divider')) menu.lastElementChild.remove();
+    if (tile) tile.classList.add('context-target');
+    menu.classList.add('show');
+    // Keep the menu inside the viewport
+    var r = menu.getBoundingClientRect();
+    menu.style.left = Math.max(0, Math.min(x, window.innerWidth - r.width - 4)) + 'px';
+    menu.style.top = Math.max(0, Math.min(y, window.innerHeight - r.height - 4)) + 'px';
+    var first = menu.querySelector('.dropdown-item');
+    if (first) first.focus();
+  }
+
+  if (explorer) {
+    explorer.addEventListener('contextmenu', function (e) {
+      var tile = e.target.closest('.netbox-explorer-tile');
+      var row = e.target.closest('.netbox-explorer-nav-row');
+      if (row) tile = row.dataset.folder === 'root' ? null : folderTile(row.dataset.folder);
+      if (!tile && !e.target.closest('.netbox-explorer-content, .netbox-explorer-nav')) return;
+      e.preventDefault();
+      showMenu(e.clientX, e.clientY, tile);
+    });
+    // Context-menu key / Shift+F10 on a focused tile
+    explorer.addEventListener('keydown', function (e) {
+      var tile = e.target.closest('.netbox-explorer-tile');
+      if (!tile || !(e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) return;
+      e.preventDefault();
+      var r = tile.getBoundingClientRect();
+      showMenu(r.left + r.width / 2, r.top + r.height / 2, tile);
+    });
+    menu.addEventListener('keydown', function (e) {
+      var items = Array.prototype.slice.call(menu.querySelectorAll('.dropdown-item'));
+      var i = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+    });
+    document.addEventListener('click', function (e) { if (!menu.contains(e.target)) closeMenu(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
   }
 
   // --- View switcher ---
