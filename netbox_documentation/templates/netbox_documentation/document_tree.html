@@ -124,7 +124,6 @@
   .netbox-explorer-tile[draggable="true"] { cursor: grab; }
   .netbox-explorer-tile.dragging { opacity: .4; }
   .netbox-explorer-drop { background-color: rgba(var(--tblr-success-rgb, 47,179,68), .18) !important; outline: 2px dashed rgba(var(--tblr-success-rgb, 47,179,68), .8); outline-offset: -2px; }
-  .netbox-explorer-nodrop { background-color: rgba(var(--tblr-danger-rgb, 214,57,57), .12) !important; outline: 2px dashed rgba(var(--tblr-danger-rgb, 214,57,57), .7); outline-offset: -2px; cursor: not-allowed; }
   @media (max-width: 767px) { .netbox-explorer-nav { display: none; } }
 </style>
 
@@ -440,13 +439,6 @@ document.addEventListener('DOMContentLoaded', function () {
   function dropHighlight(el) {
     return el.closest('.netbox-explorer-tile[data-kind="folder"], .netbox-explorer-nav-row, .netbox-explorer-address [data-open]') || el.closest('.netbox-explorer-content');
   }
-  // Same rule as the server: a folder with a tenant only accepts documents of that tenant.
-  function tenantConflict(doc, folderId) {
-    if (folderId === 'root') return null;
-    var f = folderTile(folderId);
-    if (!f || !f.dataset.tenant || f.dataset.tenant === doc.dataset.tenant) return null;
-    return 'Der Ordner gehört zum Mandanten „' + f.dataset.tenantName + '“. Das Dokument muss im selben Mandanten bleiben.';
-  }
   function originalTile(pk) { return explorer.querySelector('.netbox-explorer-pane[data-folder] .netbox-explorer-tile[data-kind="document"][data-pk="' + pk + '"]'); }
 
   function refreshFolderTile(folderId) {
@@ -465,15 +457,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var dragged = null, lastHighlight = null;
   function clearHighlight() {
-    if (lastHighlight) lastHighlight.classList.remove('netbox-explorer-drop', 'netbox-explorer-nodrop');
+    if (lastHighlight) lastHighlight.classList.remove('netbox-explorer-drop');
     lastHighlight = null;
   }
 
   function moveDocument(doc, folderId) {
     var source = doc.closest('.netbox-explorer-pane[data-folder]').dataset.folder;
     if (source === folderId) return;
-    var conflict = tenantConflict(doc, folderId);
-    if (conflict) { toast(conflict, false); return; }
     var body = new FormData();
     body.append('category', folderId === 'root' ? '' : folderId);
     body.append('csrfmiddlewaretoken', document.querySelector('#doc-explorer-export [name=csrfmiddlewaretoken]').value);
@@ -512,11 +502,10 @@ document.addEventListener('DOMContentLoaded', function () {
       var el = folderId && dropHighlight(e.target);
       if (el !== lastHighlight) clearHighlight();
       if (!folderId) return;
-      var ok = !tenantConflict(dragged, folderId);
       e.preventDefault();
-      e.dataTransfer.dropEffect = ok ? 'move' : 'none';
+      e.dataTransfer.dropEffect = 'move';
       lastHighlight = el;
-      el.classList.add(ok ? 'netbox-explorer-drop' : 'netbox-explorer-nodrop');
+      el.classList.add('netbox-explorer-drop');
     });
     explorer.addEventListener('drop', function (e) {
       if (!dragged) return;

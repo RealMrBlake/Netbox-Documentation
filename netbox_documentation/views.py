@@ -127,7 +127,7 @@ class DocumentEditView(generic.ObjectEditView):
 
 
 class DocumentMoveView(PermissionRequiredMixin, View):
-    """Move a document into another folder (drag & drop in the Explorer). The tenant never changes."""
+    """Move a document into any other folder (drag & drop in the Explorer). Only the folder changes, never the tenant."""
 
     permission_required = "netbox_documentation.change_document"
 
@@ -139,11 +139,6 @@ class DocumentMoveView(PermissionRequiredMixin, View):
             category = DocumentCategory.objects.restrict(request.user, "view").filter(pk=category_id).first()
             if category is None:
                 return JsonResponse({"error": "Der Zielordner existiert nicht."}, status=404)
-            if category.tenant_id and category.tenant_id != document.tenant_id:
-                return JsonResponse({
-                    "error": f"Der Ordner „{category.name}“ gehört zum Mandanten „{category.tenant}“. "
-                             f"Das Dokument muss im selben Mandanten bleiben.",
-                }, status=400)
         if document.category_id != (category.pk if category else None):
             document.snapshot()
             document.category = category
