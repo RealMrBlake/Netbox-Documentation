@@ -10,6 +10,20 @@ A wiki for operational documentation and how-tos, integrated into NetBox.
 | **Python** | `>=3.10` |
 | **Repository** | <https://git.mrblake.cc/MrBlake/Netbox-Documentation> |
 
+## Screenshots
+
+Document with tenant, folder and object assignments:
+
+![Document with tenant, folder and object assignments](docs/screenshots/document.png)
+
+Document list:
+
+![Document list](docs/screenshots/documents.png)
+
+Folder tree:
+
+![Folder tree](docs/screenshots/folders.png)
+
 ## Features
 
 - Write documentation directly in NetBox, displayed as safely sanitised rich text
