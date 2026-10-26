@@ -28,7 +28,12 @@ test = ["pytest>=8", "pytest-django>=4.9"]
 include = ["netbox_documentation*"]
 
 [tool.setuptools.package-data]
-netbox_documentation = ["templates/**/*.html", "static/**/*"]
+netbox_documentation = [
+  "templates/**/*.html",
+  "static/**/*",
+  "locale/*/LC_MESSAGES/*.po",
+  "locale/*/LC_MESSAGES/*.mo",
+]
 
 [tool.pytest.ini_options]
 python_files = ["test_*.py"]

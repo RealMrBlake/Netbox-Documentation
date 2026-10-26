@@ -3,7 +3,10 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.base import ContentFile
 from django.db.models import Q
+from django.utils.functional import lazy
 from django.utils.html import format_html
+from django.utils.safestring import SafeString
+from django.utils.translation import gettext_lazy as _
 from utilities.forms import get_field_value
 from utilities.forms.fields import (
     ContentTypeChoiceField, DynamicModelChoiceField, DynamicModelMultipleChoiceField, SlugField,
@@ -17,12 +20,15 @@ from .embedded_images import EmbeddedImageError, store_embedded_images, validate
 from .models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
 
 
-def help_label(label, description):
+def _help_label(label, description):
     return format_html(
         '{} <span class="mdi mdi-help-circle-outline text-muted" title="{}" '
         'data-bs-toggle="tooltip" aria-label="{}"></span>',
         label, description, description,
     )
+
+
+help_label = lazy(_help_label, SafeString)  # labels are built at import time, render in the request language
 
 
 def allowed_content_types():
@@ -38,22 +44,22 @@ def allowed_content_types():
 
 class DocumentForm(NetBoxModelForm):
     slug = SlugField(slug_source="title")
-    body = forms.CharField(required=False, label="Inhalt", widget=forms.Textarea(attrs={
+    body = forms.CharField(required=False, label=_("Content"), widget=forms.Textarea(attrs={
         "rows": 32, "class": "rich-text-editor", "data-rich-text-editor": "true"
-    }), help_text="Formatierter Text mit Tabellen, Farben, Schriftarten und Größen.")
+    }), help_text=_("Formatted text with tables, colours, fonts and sizes."))
     body_format = forms.CharField(widget=forms.HiddenInput(), initial="html")
-    category = DynamicModelChoiceField(queryset=DocumentCategory.objects.all(), required=False, label="Ordner")
+    category = DynamicModelChoiceField(queryset=DocumentCategory.objects.all(), required=False, label=_("Folder"))
     tenant_group = DynamicModelChoiceField(
-        queryset=TenantGroup.objects.all(), required=False, selector=True, label="Mandantengruppe",
+        queryset=TenantGroup.objects.all(), required=False, selector=True, label=_("Tenant group"),
     )
     tenant = DynamicModelChoiceField(
-        queryset=Tenant.objects.all(), required=False, selector=True, label="Mandant",
+        queryset=Tenant.objects.all(), required=False, selector=True, label=_("Tenant"),
         query_params={"group_id": "$tenant_group"},
     )
 
     fieldsets = (
-        FieldSet("title", "slug", "category", "tenant_group", "tenant", "summary", "is_published", "tags", name="Dokumentation"),
-        FieldSet("body", "body_format", name="Inhalt"),
+        FieldSet("title", "slug", "category", "tenant_group", "tenant", "summary", "is_published", "tags", name=_("Document")),
+        FieldSet("body", "body_format", name=_("Content")),
     )
 
     class Meta:
@@ -83,7 +89,7 @@ class DocumentForm(NetBoxModelForm):
         cleaned = self.cleaned_data
         tenant, group = cleaned.get("tenant"), cleaned.get("tenant_group")
         if tenant and group and tenant.group_id != group.pk:
-            self.add_error("tenant", "Der Mandant gehört nicht zur ausgewählten Mandantengruppe.")
+            self.add_error("tenant", _("The tenant does not belong to the selected tenant group."))
         return cleaned
 
     def save(self, commit=True):
@@ -98,7 +104,7 @@ class DocumentForm(NetBoxModelForm):
             nonlocal counter
             counter += 1
             extension = {"image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp"}[mime]
-            name = f"editor-bild-{document.pk}-{counter}.{extension}"
+            name = f"editor-image-{document.pk}-{counter}.{extension}"
             attachment = DocumentAttachment(
                 document=document, original_name=name, content_type=mime, size=len(content),
             )
@@ -112,12 +118,12 @@ class DocumentForm(NetBoxModelForm):
 
 
 class AssignmentForm(NetBoxModelForm):
-    assigned_object_type = ContentTypeChoiceField(queryset=ContentType.objects.none(), label="Objekttyp", widget=HTMXSelect())
+    assigned_object_type = ContentTypeChoiceField(queryset=ContentType.objects.none(), label=_("Object type"), widget=HTMXSelect())
     assigned_object = DynamicModelChoiceField(
-        queryset=Device.objects.none(), label="NetBox-Objekt", required=True, disabled=True, selector=True
+        queryset=Device.objects.none(), label=_("NetBox object"), required=True, disabled=True, selector=True
     )
 
-    fieldsets = (FieldSet("document", "assigned_object_type", "assigned_object", "note", "tags", name="Dokumentation zuordnen"),)
+    fieldsets = (FieldSet("document", "assigned_object_type", "assigned_object", "note", "tags", name=_("Assign document")),)
 
     class Meta:
         model = DocumentAssignment
@@ -149,16 +155,16 @@ class AssignmentForm(NetBoxModelForm):
 
 class DocumentCategoryForm(NetBoxModelForm):
     slug = SlugField(slug_source="name")
-    parent = DynamicModelChoiceField(queryset=DocumentCategory.objects.all(), required=False, label="Übergeordneter Ordner")
+    parent = DynamicModelChoiceField(queryset=DocumentCategory.objects.all(), required=False, label=_("Parent folder"))
     tenant_group = DynamicModelChoiceField(
-        queryset=TenantGroup.objects.all(), required=False, selector=True, label="Mandantengruppe",
+        queryset=TenantGroup.objects.all(), required=False, selector=True, label=_("Tenant group"),
     )
     tenant = DynamicModelChoiceField(
-        queryset=Tenant.objects.all(), required=False, selector=True, label="Mandant",
+        queryset=Tenant.objects.all(), required=False, selector=True, label=_("Tenant"),
         query_params={"group_id": "$tenant_group"},
     )
 
-    fieldsets = (FieldSet("name", "slug", "parent", "tenant_group", "tenant", "description", "tags", name="Ordner"),)
+    fieldsets = (FieldSet("name", "slug", "parent", "tenant_group", "tenant", "description", "tags", name=_("Folder")),)
 
     class Meta:
         model = DocumentCategory
@@ -174,38 +180,38 @@ class DocumentCategoryForm(NetBoxModelForm):
         cleaned = self.cleaned_data
         tenant, group = cleaned.get("tenant"), cleaned.get("tenant_group")
         if tenant and group and tenant.group_id != group.pk:
-            self.add_error("tenant", "Der Mandant gehört nicht zur ausgewählten Mandantengruppe.")
+            self.add_error("tenant", _("The tenant does not belong to the selected tenant group."))
         return cleaned
 
 
 class ImportForm(forms.Form):
-    file = forms.FileField(label="Word-, Excel- oder PDF-Datei")
+    file = forms.FileField(label=_("Word, Excel or PDF file"))
     title = forms.CharField(max_length=200, required=False, label=help_label(
-        "Titel", "Leer lassen, um den Dateinamen als Titel zu verwenden. Beim Mehrblattimport werden die Blattnamen verwendet."
+        _("Title"), _("Leave empty to use the file name as title. Multi-sheet imports use the sheet names.")
     ))
     append = forms.BooleanField(required=False, initial=False, label=help_label(
-        "An bestehende Dokumentation anhängen", "Fügt den importierten Inhalt am Ende einer vorhandenen Dokumentation an."
+        _("Append to existing document"), _("Adds the imported content to the end of an existing document.")
     ))
     document = forms.ModelChoiceField(queryset=Document.objects.all(), required=False, label=help_label(
-        "Bestehende Dokumentation", "Zieldokumentation für die Funktion Anhängen."
+        _("Existing document"), _("Target document for appending.")
     ))
     excel_sheets_as_documents = forms.BooleanField(
         required=False,
         label=help_label(
-            "Excel mit mehreren Arbeitsblättern – je Blatt eine Dokumentation",
-            "Erstellt aus jedem nicht leeren Excel-Arbeitsblatt eine eigene Dokumentation im gewählten Zielordner.",
+            _("Excel with multiple worksheets – one document per sheet"),
+            _("Creates a separate document in the selected target folder from every non-empty Excel worksheet."),
         ),
     )
     flatten_excel_tables = forms.BooleanField(
         required=False,
         label=help_label(
-            "Excel-Tabellen glätten",
-            "Übernimmt normale Zellen ohne Tabelle als dokumentartigen Text. Nur in Excel ausdrücklich über Einfügen → Tabelle definierte Bereiche bleiben Tabellen.",
+            _("Flatten Excel tables"),
+            _("Imports plain cells outside tables as document-style text. Only ranges explicitly defined in Excel via Insert → Table remain tables."),
         ),
     )
     category = forms.ModelChoiceField(
         queryset=DocumentCategory.objects.none(), required=False,
-        label=help_label("Zielordner / Kategorie", "Für den Excel-Mehrblattimport verpflichtend."),
+        label=help_label(_("Target folder / category"), _("Required for the Excel multi-sheet import.")),
     )
 
     def __init__(self, *args, user=None, **kwargs):
@@ -217,30 +223,30 @@ class ImportForm(forms.Form):
     def clean(self):
         data = super().clean()
         if data.get("append") and not data.get("document"):
-            self.add_error("document", "Zum Anhängen muss eine Dokumentation gewählt werden.")
+            self.add_error("document", _("Select a document to append to."))
         upload = data.get("file")
         if data.get("excel_sheets_as_documents"):
             if upload and not upload.name.lower().endswith((".xlsx", ".xlsm")):
-                self.add_error("file", "Der Mehrblattimport benötigt eine XLSX- oder XLSM-Datei.")
+                self.add_error("file", _("The multi-sheet import requires an XLSX or XLSM file."))
             if not data.get("category"):
-                self.add_error("category", "Bitte einen Zielordner für die erzeugten Dokumentationen auswählen.")
+                self.add_error("category", _("Select a target folder for the generated documents."))
             if data.get("append"):
-                self.add_error("append", "Mehrblattimport und Anhängen können nicht kombiniert werden.")
+                self.add_error("append", _("Multi-sheet import and appending cannot be combined."))
         limit = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("max_import_size_mb", 25)
         if upload and upload.size > limit * 1024 * 1024:
-            self.add_error("file", f"Die Datei ist größer als {limit} MB.")
+            self.add_error("file", _("The file is larger than %(limit)s MB.") % {"limit": limit})
         return data
 
 
 class ArchiveExportForm(forms.Form):
     categories = DynamicModelMultipleChoiceField(
         queryset=DocumentCategory.objects.all(), selector=True,
-        label="Ordner und Kategorien",
-        help_text="Einen oder mehrere Ordner suchen und hinzufügen.",
+        label=_("Folders and categories"),
+        help_text=_("Search for and add one or more folders."),
     )
     include_subfolders = forms.BooleanField(
-        required=False, initial=True, label="Unterordner einbeziehen",
-        help_text="Exportiert Dokumentationen aus allen untergeordneten Ordnern.",
+        required=False, initial=True, label=_("Include subfolders"),
+        help_text=_("Exports documents from all subfolders."),
     )
 
     def __init__(self, *args, user=None, **kwargs):
@@ -252,38 +258,38 @@ class ArchiveExportForm(forms.Form):
 
 
 class ArchiveImportForm(forms.Form):
-    archive = forms.FileField(label="ZIP-Archiv")
+    archive = forms.FileField(label=_("ZIP archive"))
     update_existing = forms.BooleanField(
         required=False, initial=False,
-        label="Bestehende Dokumentationen mit gleicher Kennung aktualisieren",
-        help_text="Ohne diese Option werden bei Namenskonflikten neue Dokumentationen mit einer fortlaufenden Kennung angelegt.",
+        label=_("Update existing documents with the same slug"),
+        help_text=_("Without this option, name conflicts create new documents with a numbered slug."),
     )
 
     def clean_archive(self):
         upload = self.cleaned_data["archive"]
         if not upload.name.lower().endswith(".zip"):
-            raise forms.ValidationError("Bitte ein vom Plugin erzeugtes ZIP-Archiv auswählen.")
+            raise forms.ValidationError(_("Select a ZIP archive created by this plugin."))
         limit = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("max_archive_size_mb", 250)
         if upload.size > limit * 1024 * 1024:
-            raise forms.ValidationError(f"Das Archiv ist größer als {limit} MB.")
+            raise forms.ValidationError(_("The archive is larger than %(limit)s MB.") % {"limit": limit})
         return upload
 
 
 class ExcelSheetSelectionForm(forms.Form):
     include = forms.BooleanField(
-        required=False, initial=True, label="Importieren",
+        required=False, initial=True, label=_("Import"),
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
     index = forms.IntegerField(widget=forms.HiddenInput())
     title = forms.CharField(
-        max_length=200, required=False, label="Dokumenttitel",
+        max_length=200, required=False, label=_("Document title"),
         widget=forms.TextInput(attrs={"class": "form-control"}),
     )
 
     def clean(self):
         data = super().clean()
         if data.get("include") and not (data.get("title") or "").strip():
-            self.add_error("title", "Für ein ausgewähltes Arbeitsblatt ist ein Titel erforderlich.")
+            self.add_error("title", _("A selected worksheet requires a title."))
         return data
 
 
@@ -294,13 +300,13 @@ class BaseExcelSheetSelectionFormSet(forms.BaseFormSet):
             return
         selected = [form.cleaned_data for form in self.forms if form.cleaned_data.get("include")]
         if not selected:
-            raise forms.ValidationError("Bitte mindestens ein Arbeitsblatt auswählen.")
+            raise forms.ValidationError(_("Select at least one worksheet."))
         indices = [item["index"] for item in selected]
         if len(indices) != len(set(indices)):
-            raise forms.ValidationError("Die Arbeitsblattauswahl ist ungültig.")
+            raise forms.ValidationError(_("The worksheet selection is invalid."))
         titles = [item["title"].strip().casefold() for item in selected]
         if len(titles) != len(set(titles)):
-            raise forms.ValidationError("Ausgewählte Arbeitsblätter dürfen nicht denselben Dokumenttitel haben.")
+            raise forms.ValidationError(_("Selected worksheets must not have the same document title."))
 
 
 ExcelSheetSelectionFormSet = forms.formset_factory(

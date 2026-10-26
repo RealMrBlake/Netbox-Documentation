@@ -43,6 +43,6 @@ def test_embedded_images_respect_total_size_limit():
     try:
         embedded.validate_embedded_images(html, 1)
     except embedded.EmbeddedImageError as exc:
-        assert "Gesamtgröße" in str(exc)
+        assert "total size" in str(exc)
     else:
-        raise AssertionError("Größenlimit wurde nicht angewendet")
+        raise AssertionError("size limit was not applied")

@@ -1,16 +1,17 @@
 {% extends 'base/layout.html' %}
+{% load i18n %}
 
-{% block title %}Ordner & Kategorien{% endblock %}
+{% block title %}{% trans "Folders & categories" %}{% endblock %}
 
 {% block content %}
 <div class="row mb-3">
   <div class="col d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <input type="search" id="folder-tree-search" class="form-control" style="max-width: 20rem;" placeholder="Ordner durchsuchen…">
+    <input type="search" id="folder-tree-search" class="form-control" style="max-width: 20rem;" placeholder="{% trans "Search folders…" %}">
     <div class="d-flex gap-2">
       {% if perms.netbox_documentation.add_documentcategory %}
-      <a href="{% url 'plugins:netbox_documentation:documentcategory_add' %}" class="btn btn-success"><i class="mdi mdi-folder-plus"></i> Ordner erstellen</a>
+      <a href="{% url 'plugins:netbox_documentation:documentcategory_add' %}" class="btn btn-success"><i class="mdi mdi-folder-plus"></i> {% trans "Create folder" %}</a>
       {% endif %}
-      <a href="{% url 'plugins:netbox_documentation:documentcategory_list' %}" class="btn btn-outline-secondary"><i class="mdi mdi-format-list-bulleted"></i> Listenansicht</a>
+      <a href="{% url 'plugins:netbox_documentation:documentcategory_list' %}" class="btn btn-outline-secondary"><i class="mdi mdi-format-list-bulleted"></i> {% trans "List view" %}</a>
     </div>
   </div>
 </div>
@@ -23,7 +24,7 @@
       {% endfor %}
     </ul>
     {% else %}
-    <p class="text-muted mb-0">Noch keine Ordner vorhanden.</p>
+    <p class="text-muted mb-0">{% trans "No folders yet." %}</p>
     {% endif %}
   </div>
 </div>

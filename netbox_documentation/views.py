@@ -12,6 +12,7 @@ from django.db.models import Count, Q
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
+from django.utils.translation import gettext as _, ngettext
 from django.utils import timezone
 from django.views import View
 from netbox.views import generic
@@ -138,7 +139,7 @@ class DocumentMoveView(PermissionRequiredMixin, View):
         if category_id is not None:
             category = DocumentCategory.objects.restrict(request.user, "view").filter(pk=category_id).first()
             if category is None:
-                return JsonResponse({"error": "Der Zielordner existiert nicht."}, status=404)
+                return JsonResponse({"error": _("The target folder does not exist.")}, status=404)
         if document.category_id != (category.pk if category else None):
             document.snapshot()
             document.category = category
@@ -255,7 +256,7 @@ class DocumentImportView(PermissionRequiredMixin, View):
             result = import_document(upload, flatten_excel=form.cleaned_data.get("flatten_excel_tables", False))
         except (ImportFailure, Exception) as exc:
             # Known conversion/library errors are presented without exposing a traceback.
-            form.add_error("file", f"Import fehlgeschlagen: {exc}")
+            form.add_error("file", _("Import failed: %(error)s") % {"error": exc})
             return render(request, self.template_name, {"form": form})
         with transaction.atomic():
             document = form.cleaned_data.get("document")
@@ -269,7 +270,7 @@ class DocumentImportView(PermissionRequiredMixin, View):
                 document.save()
             else:
                 title = form.cleaned_data.get("title") or Path(upload.name).stem
-                base_slug = slugify(title)[:180] or "dokumentation"
+                base_slug = slugify(title)[:180] or "document"
                 slug = base_slug
                 counter = 2
                 while Document.objects.filter(slug=slug).exists():
@@ -289,7 +290,7 @@ class DocumentImportView(PermissionRequiredMixin, View):
                     original_name=upload.name, content_type=upload.content_type or "", size=upload.size)
         for warning in result.warnings:
             messages.warning(request, warning)
-        messages.success(request, f"{upload.name} wurde importiert.")
+        messages.success(request, _("%(name)s was imported.") % {"name": upload.name})
         return redirect(document)
 
     def _import_excel_sheets(self, request, form, upload):
@@ -299,7 +300,7 @@ class DocumentImportView(PermissionRequiredMixin, View):
                 metadata_only=True, include_image_data=False,
             )
         except (ImportFailure, Exception) as exc:
-            form.add_error("file", f"Excel-Mehrblattimport fehlgeschlagen: {exc}")
+            form.add_error("file", _("Excel multi-sheet import failed: %(error)s") % {"error": exc})
             return render(request, self.template_name, {"form": form})
         # Remove abandoned previews owned by this user before creating a new one.
         stale = ExcelImportPreview.objects.filter(created__lt=timezone.now() - timedelta(hours=24))
@@ -343,14 +344,19 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
         for form, sheet in zip(formset.forms, sheets):
             sample = sheet.markdown
             if sheet.images:
-                image_notice = f"{len(sheet.images)} eingebettete Bilder werden beim Import angefügt."
+                image_notice = ngettext(
+                    "%(count)s embedded image will be attached on import.",
+                    "%(count)s embedded images will be attached on import.",
+                    len(sheet.images),
+                ) % {"count": len(sheet.images)}
+                images_heading = _("Images")
                 if sheet.body_format == "html":
-                    sample += f"\n<h2>Bilder</h2><p><em>{image_notice}</em></p>"
+                    sample += f"\n<h2>{escape(images_heading)}</h2><p><em>{escape(image_notice)}</em></p>"
                 else:
-                    sample += f"\n\n## Bilder\n\n_{image_notice}_"
+                    sample += f"\n\n## {images_heading}\n\n_{image_notice}_"
             truncated = len(sample) > 100000
             if truncated:
-                notice = "… Vorschau gekürzt …"
+                notice = _("… preview truncated …")
                 sample = sample[:100000] + (
                     f"<p><em>{notice}</em></p>" if sheet.body_format == "html" else f"\n\n_{notice}_"
                 )
@@ -368,13 +374,13 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
         preview = self.get_preview(request, token)
         if preview.created < timezone.now() - timedelta(hours=24):
             self.delete_preview(preview)
-            messages.error(request, "Diese Importvorschau ist abgelaufen. Bitte die Exceldatei erneut hochladen.")
+            messages.error(request, _("This import preview has expired. Please upload the Excel file again."))
             return redirect("plugins:netbox_documentation:document_import")
         try:
             sheets = self.read_sheets(preview, for_preview=True)
         except (ImportFailure, Exception) as exc:
             self.delete_preview(preview)
-            messages.error(request, f"Die Excel-Vorschau konnte nicht erzeugt werden: {exc}")
+            messages.error(request, _("The Excel preview could not be created: %(error)s") % {"error": exc})
             return redirect("plugins:netbox_documentation:document_import")
         initial = [{"include": True, "index": index, "title": sheet.title} for index, sheet in enumerate(sheets)]
         return self.render_preview(request, preview, sheets, ExcelSheetSelectionFormSet(initial=initial))
@@ -383,7 +389,7 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
         preview = self.get_preview(request, token)
         if request.POST.get("action") == "cancel":
             self.delete_preview(preview)
-            messages.info(request, "Excel-Import wurde abgebrochen.")
+            messages.info(request, _("Excel import was cancelled."))
             return redirect("plugins:netbox_documentation:document_import")
         formset = ExcelSheetSelectionFormSet(request.POST)
         if not formset.is_valid():
@@ -391,12 +397,12 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                 preview_sheets = self.read_sheets(preview, for_preview=True)
             except (ImportFailure, Exception) as exc:
                 self.delete_preview(preview)
-                messages.error(request, f"Die Exceldatei konnte nicht erneut gelesen werden: {exc}")
+                messages.error(request, _("The Excel file could not be read again: %(error)s") % {"error": exc})
                 return redirect("plugins:netbox_documentation:document_import")
             return self.render_preview(request, preview, preview_sheets, formset)
         if not preview.category:
             self.delete_preview(preview)
-            messages.error(request, "Der gewählte Zielordner existiert nicht mehr. Bitte den Import erneut starten.")
+            messages.error(request, _("The selected target folder no longer exists. Please start the import again."))
             return redirect("plugins:netbox_documentation:document_import")
         selections = {}
         for form in formset.forms:
@@ -418,13 +424,13 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                 pk__in=[document.pk for document in conflicts]
             ).values_list("pk", flat=True))
             if any(document.pk not in allowed_ids for document in conflicts):
-                messages.error(request, "Mindestens eine gleichnamige Dokumentation darf nicht aktualisiert werden.")
+                messages.error(request, _("You are not allowed to update at least one document with the same name."))
                 return redirect("plugins:netbox_documentation:excel_import_preview", token=preview.pk)
             if request.POST.get("confirm_overwrite") != "1":
                 try:
                     preview_sheets = self.read_sheets(preview, for_preview=True)
                 except (ImportFailure, Exception) as exc:
-                    messages.error(request, f"Die Bestätigung konnte nicht angezeigt werden: {exc}")
+                    messages.error(request, _("The confirmation could not be displayed: %(error)s") % {"error": exc})
                     return redirect("plugins:netbox_documentation:excel_import_preview", token=preview.pk)
                 return self.render_preview(
                     request, preview, preview_sheets, formset,
@@ -433,16 +439,15 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
         try:
             selected_sheets = self.read_sheets(preview, selected_indexes=selections)
         except (ImportFailure, Exception) as exc:
-            messages.error(request, f"Die ausgewählten Excel-Blätter konnten nicht importiert werden: {exc}")
+            messages.error(request, _("The selected Excel sheets could not be imported: %(error)s") % {"error": exc})
             return redirect("plugins:netbox_documentation:excel_import_preview", token=preview.pk)
         sheets_by_index = {sheet.source_index: sheet for sheet in selected_sheets}
         result = self.create_documents(preview, sheets_by_index, selections)
         self.delete_preview(preview)
-        messages.success(request, (
-            f"{result['documents']} Arbeitsblätter verarbeitet "
-            f"({result['created']} neu, {result['updated']} aktualisiert) in „{result['category']}“; "
-            f"{result['images']} Bilder übernommen."
-        ))
+        messages.success(request, _(
+            "%(documents)s worksheets processed (%(created)s new, %(updated)s updated) "
+            "in “%(category)s”; %(images)s images imported."
+        ) % result)
         return redirect("plugins:netbox_documentation:document_list")
 
     @staticmethod
@@ -459,7 +464,7 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                 document.title = title[:200]
                 document.body = sheet.markdown
                 document.body_format = sheet.body_format
-                document.summary = f"Importiert aus {preview.original_name}"
+                document.summary = _("Imported from %(name)s") % {"name": preview.original_name}
                 document.tenant_group = preview.category.tenant_group
                 document.tenant = preview.category.tenant
                 document.save(update_fields=(
@@ -467,7 +472,7 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                 ))
                 updated_count += 1
             else:
-                base_slug = slugify(title)[:180] or "arbeitsblatt"
+                base_slug = slugify(title)[:180] or "worksheet"
                 document_slug, counter = base_slug, 2
                 while Document.objects.filter(slug=document_slug).exists():
                     document_slug = f"{base_slug[:190-len(str(counter))]}-{counter}"
@@ -476,7 +481,7 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                     title=title[:200], slug=document_slug, body=sheet.markdown,
                     body_format=sheet.body_format, category=preview.category,
                     tenant_group=preview.category.tenant_group, tenant=preview.category.tenant,
-                    summary=f"Importiert aus {preview.original_name}",
+                    summary=_("Imported from %(name)s") % {"name": preview.original_name},
                 )
                 created_count += 1
             if sheet.images:
@@ -496,9 +501,9 @@ class ExcelImportPreviewView(PermissionRequiredMixin, View):
                     else:
                         image_lines.append(f"![{image.name}{location}]({attachment.file.url})")
                 if document.body_format == "html":
-                    document.body += "\n<h2>Bilder</h2>\n" + "\n".join(image_lines)
+                    document.body += f"\n<h2>{escape(_('Images'))}</h2>\n" + "\n".join(image_lines)
                 else:
-                    document.body += "\n\n## Bilder\n\n" + "\n\n".join(image_lines)
+                    document.body += f"\n\n## {_('Images')}\n\n" + "\n\n".join(image_lines)
                 document.save(update_fields=("body", "last_updated"))
                 image_count += len(sheet.images)
             created_documents.append(document)
@@ -532,20 +537,20 @@ class DocumentMediaUploadView(PermissionRequiredMixin, View):
         document = get_object_or_404(Document.objects.restrict(request.user, "change"), pk=pk)
         upload = request.FILES.get("file")
         if not upload:
-            return JsonResponse({"error": "Keine Datei empfangen."}, status=400)
+            return JsonResponse({"error": _("No file received.")}, status=400)
         limit = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("max_import_size_mb", 25)
         if upload.size > limit * 1024 * 1024:
-            return JsonResponse({"error": f"Die Datei ist größer als {limit} MB."}, status=400)
+            return JsonResponse({"error": _("The file is larger than %(limit)s MB.") % {"limit": limit}}, status=400)
         allowed = {"image/jpeg", "image/png", "image/gif", "image/webp"}
         if upload.content_type not in allowed:
-            return JsonResponse({"error": "Im Editor sind JPEG, PNG, GIF und WebP erlaubt."}, status=400)
+            return JsonResponse({"error": _("The editor accepts JPEG, PNG, GIF and WebP.")}, status=400)
         try:
             from PIL import Image
             image = Image.open(upload)
             image.verify()
             upload.seek(0)
         except Exception:
-            return JsonResponse({"error": "Die hochgeladene Datei ist kein gültiges Bild."}, status=400)
+            return JsonResponse({"error": _("The uploaded file is not a valid image.")}, status=400)
         attachment = DocumentAttachment.objects.create(
             document=document, file=upload, original_name=upload.name,
             content_type=upload.content_type or "", size=upload.size,
@@ -579,7 +584,7 @@ class DocumentArchiveView(View):
                 form.cleaned_data["categories"], form.cleaned_data["include_subfolders"], request.user
             )
             if not documents.exists():
-                form.add_error("categories", "Die ausgewählten Ordner enthalten keine exportierbaren Dokumentationen.")
+                form.add_error("categories", _("The selected folders contain no exportable documents."))
                 return self._render(request, export_form=form)
             stream = export_documents(documents)
             response = FileResponse(stream, content_type="application/zip")
@@ -604,10 +609,10 @@ class DocumentArchiveView(View):
             except ArchiveFailure as exc:
                 form.add_error("archive", str(exc))
                 return self._render(request, import_form=form)
-            messages.success(request, (
-                f"Archiv importiert: {result['created']} erstellt, {result['updated']} aktualisiert."
-            ))
+            messages.success(request, _(
+                "Archive imported: %(created)s created, %(updated)s updated."
+            ) % result)
             if result["skipped_assignments"]:
-                messages.warning(request, f"{result['skipped_assignments']} nicht verfügbare Objektzuordnungen wurden übersprungen.")
+                messages.warning(request, _("%(skipped)s unavailable object assignments were skipped.") % {"skipped": result["skipped_assignments"]})
             return redirect("plugins:netbox_documentation:document_list")
         return self._render(request)

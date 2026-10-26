@@ -1,4 +1,5 @@
 {% extends 'generic/object.html' %}
+{% load i18n %}
 {% load helpers %}
 {% block head %}
   {{ block.super }}
@@ -109,30 +110,30 @@
 {% endblock head %}
 {% block extra_controls %}
   <button type="button" id="documentation-fullscreen" class="btn btn-outline-secondary">
-    <i class="mdi mdi-arrow-expand-all"></i> Großansicht
+    <i class="mdi mdi-arrow-expand-all"></i> {% trans "Focus view" %}
   </button>
   <a href="{% url 'plugins:netbox_documentation:document_print' pk=object.pk %}" target="_blank" class="btn btn-outline-secondary">
-    <i class="mdi mdi-printer"></i> Drucken / PDF
+    <i class="mdi mdi-printer"></i> {% trans "Print / PDF" %}
   </a>
 {% endblock extra_controls %}
 {% block content %}
 <div class="row">
   <div class="col col-md-9" id="documentation-viewer">
     <h1 class="fullscreen-document-title">{{ object.title }}</h1>
-    <button type="button" class="btn btn-secondary fullscreen-exit" id="documentation-fullscreen-exit"><i class="mdi mdi-arrow-collapse-all"></i> Großansicht beenden</button>
+    <button type="button" class="btn btn-secondary fullscreen-exit" id="documentation-fullscreen-exit"><i class="mdi mdi-arrow-collapse-all"></i> {% trans "Exit focus view" %}</button>
     {% if object.summary %}<p class="lead">{{ object.summary }}</p>{% endif %}
     <div class="card"><div class="card-body rendered-markdown documentation-content">{{ object.rendered_body|safe }}</div></div>
   </div>
   <div class="col col-md-3">
-    {% if object.tenant_group or object.tenant %}<div class="card mb-3"><h5 class="card-header">Mandantenzuordnung</h5><div class="list-group list-group-flush">
+    {% if object.tenant_group or object.tenant %}<div class="card mb-3"><h5 class="card-header">{% trans "Tenancy" %}</h5><div class="list-group list-group-flush">
       {% if object.tenant_group %}<a class="list-group-item list-group-item-action" href="{{ object.tenant_group.get_absolute_url }}"><i class="mdi mdi-account-group"></i> {{ object.tenant_group }}</a>{% endif %}
       {% if object.tenant %}<a class="list-group-item list-group-item-action" href="{{ object.tenant.get_absolute_url }}"><i class="mdi mdi-domain"></i> {{ object.tenant }}</a>{% endif %}
     </div></div>{% endif %}
-    {% if object.category %}<div class="card mb-3"><h5 class="card-header">Ordner</h5><a class="list-group-item list-group-item-action" href="{{ object.category.get_absolute_url }}"><i class="mdi mdi-folder"></i> {{ object.category }}</a></div>{% endif %}
-    <div class="card"><h5 class="card-header">Zuordnungen</h5><div class="list-group list-group-flush">
-      {% for assignment in object.assignments.all %}<a class="list-group-item" href="{{ assignment.assigned_object.get_absolute_url }}">{{ assignment.assigned_object_type }}: {{ assignment.assigned_object }}</a>{% empty %}<div class="list-group-item text-muted">Noch nicht zugeordnet</div>{% endfor %}
+    {% if object.category %}<div class="card mb-3"><h5 class="card-header">{% trans "Folder" %}</h5><a class="list-group-item list-group-item-action" href="{{ object.category.get_absolute_url }}"><i class="mdi mdi-folder"></i> {{ object.category }}</a></div>{% endif %}
+    <div class="card"><h5 class="card-header">{% trans "Assignments" %}</h5><div class="list-group list-group-flush">
+      {% for assignment in object.assignments.all %}<a class="list-group-item" href="{{ assignment.assigned_object.get_absolute_url }}">{{ assignment.assigned_object_type }}: {{ assignment.assigned_object }}</a>{% empty %}<div class="list-group-item text-muted">{% trans "Not assigned yet" %}</div>{% endfor %}
     </div></div>
-    {% if object.attachments.all %}<div class="card mt-3"><h5 class="card-header">Originaldateien</h5><div class="list-group list-group-flush">
+    {% if object.attachments.all %}<div class="card mt-3"><h5 class="card-header">{% trans "Original files" %}</h5><div class="list-group list-group-flush">
       {% for attachment in object.attachments.all %}<a class="list-group-item" href="{{ attachment.file.url }}">{{ attachment.original_name }}</a>{% endfor %}
     </div></div>{% endif %}
   </div>
@@ -159,7 +160,7 @@
       openButton.addEventListener('click', openViewer);
       closeButton.addEventListener('click', closeViewer);
       viewer.querySelectorAll('.documentation-content table').forEach(table => {
-        table.title = 'Tabelle in Großansicht öffnen';
+        table.title = '{{ _("Open table in focus view")|escapejs }}';
         table.addEventListener('click', event => {
           if (viewer.classList.contains('documentation-page-focus')) return;
           if (event.target.closest('a, button, input, select, textarea')) return;
@@ -174,7 +175,7 @@
         const copyButton = document.createElement('button');
         copyButton.type = 'button';
         copyButton.className = 'doc-code-copy';
-        copyButton.innerHTML = '<i class="mdi mdi-content-copy"></i> Kopieren';
+        copyButton.innerHTML = '<i class="mdi mdi-content-copy"></i> {{ _("Copy")|escapejs }}';
         copyButton.addEventListener('click', async () => {
           const text = pre.innerText.trimEnd();
           try {
@@ -190,8 +191,8 @@
             document.execCommand('copy');
             area.remove();
           }
-          copyButton.innerHTML = '<i class="mdi mdi-check"></i> Kopiert';
-          setTimeout(() => { copyButton.innerHTML = '<i class="mdi mdi-content-copy"></i> Kopieren'; }, 1500);
+          copyButton.innerHTML = '<i class="mdi mdi-check"></i> {{ _("Copied")|escapejs }}';
+          setTimeout(() => { copyButton.innerHTML = '<i class="mdi mdi-content-copy"></i> {{ _("Copy")|escapejs }}'; }, 1500);
         });
         wrapper.appendChild(copyButton);
         if (pre.dataset.lang) {

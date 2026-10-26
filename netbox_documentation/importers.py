@@ -4,6 +4,8 @@ from pathlib import Path
 from html import escape
 import re
 
+from django.utils.translation import gettext as _
+
 
 class ImportFailure(ValueError):
     pass
@@ -46,8 +48,8 @@ def import_document(upload, flatten_excel=False) -> ImportResult:
     if suffix in {".md", ".txt"}:
         return ImportResult(content.decode("utf-8-sig"))
     if suffix in {".doc", ".xls"}:
-        raise ImportFailure("Alte .doc/.xls-Dateien bitte zuerst als .docx/.xlsx speichern.")
-    raise ImportFailure("Unterstützt werden DOCX, XLSX, XLSM, PDF, Markdown und Text.")
+        raise ImportFailure(_("Please save legacy .doc/.xls files as .docx/.xlsx first."))
+    raise ImportFailure(_("Supported formats are DOCX, XLSX, XLSM, PDF, Markdown and text."))
 
 
 def _docx(content):
@@ -95,7 +97,7 @@ def _xlsx(content, flatten=False):
         rendered = _render_flattened_worksheet(sheet, workbook) if flatten else _render_excel_worksheet_html(sheet, workbook)
         sections.append(f"<h2>{escape(sheet.title)}</h2>\n{rendered}")
     if not sections:
-        raise ImportFailure("Die Arbeitsmappe enthält keine Daten.")
+        raise ImportFailure(_("The workbook contains no data."))
     return ImportResult("\n\n".join(sections), body_format="html")
 
 
@@ -109,7 +111,7 @@ def import_excel_sheets(
 
     suffix = Path(upload.name).suffix.lower()
     if suffix not in {".xlsx", ".xlsm"}:
-        raise ImportFailure("Der Mehrblattimport unterstützt XLSX- und XLSM-Dateien.")
+        raise ImportFailure(_("The multi-sheet import supports XLSX and XLSM files."))
     upload.seek(0)
     workbook = load_workbook(upload, read_only=False, data_only=True)
     results = []
@@ -156,7 +158,7 @@ def import_excel_sheets(
     workbook.close()
     upload.seek(0)
     if not results:
-        raise ImportFailure("Die Arbeitsmappe enthält keine Daten oder unterstützten Bilder.")
+        raise ImportFailure(_("The workbook contains no data or supported images."))
     return results
 
 
@@ -348,7 +350,7 @@ def _render_excel_worksheet_html(sheet, workbook, max_rows=None, bounds=None):
         output.append("</tr>")
     output.append("</tbody></table>")
     if max_rows and last_row > start_row + max_rows - 1:
-        output.append(f"<p><em>Vorschau auf {max_rows} Zeilen begrenzt.</em></p>")
+        output.append("<p><em>%s</em></p>" % escape(_("Preview limited to %(rows)s rows.") % {"rows": max_rows}))
     return "".join(output)
 
 
@@ -398,7 +400,7 @@ def _render_flattened_worksheet(sheet, workbook, max_rows=None):
                 bounds=(min_col, min_row, max_col, min(max_row, rendered_max_row)),
             ))
     if max_rows and sheet.max_row > max_rows:
-        blocks.append(f"<p><em>Vorschau auf {max_rows} von {sheet.max_row} Zeilen begrenzt.</em></p>")
+        blocks.append("<p><em>%s</em></p>" % escape(_("Preview limited to %(rows)s of %(total)s rows.") % {"rows": max_rows, "total": sheet.max_row}))
     return "\n".join(blocks) or "<p><em>Keine Inhalte</em></p>"
 
 
@@ -410,7 +412,7 @@ def _pdf(content):
         text = (page.extract_text() or "").strip()
         if text:
             text = re.sub(r"[ \t]+\n", "\n", text)
-            pages.append(f"## Seite {number}\n\n{text}")
+            pages.append("## %s\n\n%s" % (_("Page %(number)s") % {"number": number}, text))
     if not pages:
-        raise ImportFailure("Das PDF enthält keinen extrahierbaren Text. Für Scans ist OCR erforderlich.")
-    return ImportResult("\n\n".join(pages), ["PDF-Layout und Bilder können nicht vollständig übernommen werden."])
+        raise ImportFailure(_("The PDF contains no extractable text. Scanned documents require OCR."))
+    return ImportResult("\n\n".join(pages), [_("PDF layout and images cannot be imported completely.")])

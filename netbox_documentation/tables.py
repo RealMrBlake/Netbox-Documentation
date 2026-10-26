@@ -1,11 +1,12 @@
 import django_tables2 as tables
+from django.utils.translation import gettext_lazy as _
 from netbox.tables import NetBoxTable, columns
 from .models import Document, DocumentAssignment, DocumentCategory
 
 
 class DocumentTable(NetBoxTable):
     title = tables.Column(linkify=True)
-    assignments = tables.Column(accessor="assignments.count", verbose_name="Zuordnungen", orderable=False)
+    assignments = tables.Column(accessor="assignments.count", verbose_name=_("Assignments"), orderable=False)
     actions = columns.ActionsColumn(actions=("edit", "delete"))
 
     class Meta(NetBoxTable.Meta):
@@ -14,8 +15,8 @@ class DocumentTable(NetBoxTable):
 
 
 class DocumentCategoryTable(NetBoxTable):
-    name = tables.Column(linkify=True, verbose_name="Ordner")
-    document_count = tables.Column(accessor="documents.count", verbose_name="Dokumente", orderable=False)
+    name = tables.Column(linkify=True, verbose_name=_("Folder"))
+    document_count = tables.Column(accessor="documents.count", verbose_name=_("Documents"), orderable=False)
     actions = columns.ActionsColumn(actions=("edit", "delete"))
 
     class Meta(NetBoxTable.Meta):
@@ -25,7 +26,7 @@ class DocumentCategoryTable(NetBoxTable):
 
 class AssignmentTable(NetBoxTable):
     document = tables.Column(linkify=True)
-    assigned_object = tables.Column(linkify=True, verbose_name="NetBox-Objekt")
+    assigned_object = tables.Column(linkify=True, verbose_name=_("NetBox object"))
     actions = columns.ActionsColumn(actions=("edit", "delete"))
 
     class Meta(NetBoxTable.Meta):

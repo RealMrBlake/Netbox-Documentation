@@ -168,7 +168,7 @@ def test_excel_preview_limits_rows_without_affecting_sheet_detection():
         include_image_data=False,
     )
 
-    assert "Vorschau auf 100 Zeilen begrenzt" in results[0].markdown
+    assert "Preview limited to 100 rows" in results[0].markdown
     assert ">99<" in results[0].markdown
     assert ">100<" not in results[0].markdown
 

@@ -1,15 +1,16 @@
 {% extends 'base/layout.html' %}
+{% load i18n %}
 {% load form_helpers %}
-{% block title %}Dokument importieren{% endblock %}
+{% block title %}{% trans "Import document" %}{% endblock %}
 {% block content %}
 <div class="row justify-content-center"><div class="col col-md-8"><div class="card">
-  <h5 class="card-header">Word, Excel oder PDF importieren</h5>
+  <h5 class="card-header">{% trans "Import Word, Excel or PDF" %}</h5>
   <div class="card-body"><form method="post" enctype="multipart/form-data">{% csrf_token %}{% render_form form %}
     <div class="text-muted mb-3">
-      Importhinweise
-      <span class="mdi mdi-help-circle-outline" data-bs-toggle="tooltip" title="DOCX übernimmt Überschriften, Listen und Tabellen. Beim normalen XLSX-Import werden alle Blätter zusammengeführt. Der Mehrblattimport erzeugt je Blatt eine Dokumentation im Zielordner. PDF benötigt eine echte Textebene; Scan-OCR ist nicht enthalten." aria-label="Importhinweise"></span>
+      {% trans "Import notes" %}
+      <span class="mdi mdi-help-circle-outline" data-bs-toggle="tooltip" title="{% trans "DOCX keeps headings, lists and tables. A regular XLSX import merges all sheets. The multi-sheet import creates one document per sheet in the target folder. PDF requires a real text layer; OCR for scans is not included." %}" aria-label="{% trans "Import notes" %}"></span>
     </div>
-    <button type="submit" class="btn btn-primary">Importieren</button>
+    <button type="submit" class="btn btn-primary">{% trans "Import" %}</button>
   </form></div>
 </div></div></div>
 {% endblock %}

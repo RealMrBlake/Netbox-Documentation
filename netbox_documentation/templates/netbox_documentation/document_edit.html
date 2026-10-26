@@ -1,4 +1,5 @@
 {% extends 'generic/object_edit.html' %}
+{% load i18n %}
 {% block javascript %}
   {{ block.super }}
   <style>
@@ -19,7 +20,7 @@
         if (editor) {
           const warning = document.createElement('div');
           warning.className = 'alert alert-warning';
-          warning.textContent = 'Der Rich-Text-Editor konnte nicht vom lokalen Plugin-Endpunkt geladen werden. Bitte Browser-Konsole und Netzwerkprotokoll prüfen.';
+          warning.textContent = '{{ _("The rich text editor could not be loaded from the local plugin endpoint. Please check the browser console and network log.")|escapejs }}';
           editor.parentNode.insertBefore(warning, editor);
         }
         return;
@@ -29,6 +30,9 @@
         base_url: editorAssetBase.replace(/\/$/, ''),
         suffix: '.min',
         license_key: 'gpl',
+        {% get_current_language as LANGUAGE_CODE %}{% if LANGUAGE_CODE|slice:":2" == 'de' %}language: 'de',
+        language_url: editorAssetBase.replace(/\/$/, '') + '/langs/de.js',
+        {% endif %}
         height: 650,
         menubar: 'file edit view insert format tools table help',
         plugins: 'advlist anchor autolink charmap code codesample fullscreen image link lists media preview searchreplace table visualblocks wordcount',
@@ -46,29 +50,29 @@
         table_default_attributes: {border: '1'},
         table_default_styles: {'border-collapse': 'collapse'},
         table_class_list: [
-          {title: 'Standard mit Rahmen', value: 'doc-table-bordered'},
-          {title: 'Kompakt', value: 'doc-table-compact'},
-          {title: 'Gestreifte Zeilen', value: 'doc-table-striped'},
-          {title: 'Blaue Kopfzeile', value: 'doc-table-header-blue'},
-          {title: 'Grüne Kopfzeile', value: 'doc-table-header-green'},
-          {title: 'Dunkle Kopfzeile', value: 'doc-table-header-dark'},
-          {title: 'Ohne Rahmen', value: 'doc-table-borderless'},
-          {title: 'Volle Breite', value: 'doc-table-full-width'}
+          {title: '{{ _("Standard with borders")|escapejs }}', value: 'doc-table-bordered'},
+          {title: '{{ _("Compact")|escapejs }}', value: 'doc-table-compact'},
+          {title: '{{ _("Striped rows")|escapejs }}', value: 'doc-table-striped'},
+          {title: '{{ _("Blue header")|escapejs }}', value: 'doc-table-header-blue'},
+          {title: '{{ _("Green header")|escapejs }}', value: 'doc-table-header-green'},
+          {title: '{{ _("Dark header")|escapejs }}', value: 'doc-table-header-dark'},
+          {title: '{{ _("No borders")|escapejs }}', value: 'doc-table-borderless'},
+          {title: '{{ _("Full width")|escapejs }}', value: 'doc-table-full-width'}
         ],
         table_cell_class_list: [
-          {title: 'Normal', value: ''},
-          {title: 'Gelb hervorheben', value: 'doc-cell-yellow'},
-          {title: 'Grün hervorheben', value: 'doc-cell-green'},
-          {title: 'Rot hervorheben', value: 'doc-cell-red'},
-          {title: 'Blau hervorheben', value: 'doc-cell-blue'},
-          {title: 'Vertikal mittig', value: 'doc-cell-middle'}
+          {title: '{{ _("Normal")|escapejs }}', value: ''},
+          {title: '{{ _("Highlight yellow")|escapejs }}', value: 'doc-cell-yellow'},
+          {title: '{{ _("Highlight green")|escapejs }}', value: 'doc-cell-green'},
+          {title: '{{ _("Highlight red")|escapejs }}', value: 'doc-cell-red'},
+          {title: '{{ _("Highlight blue")|escapejs }}', value: 'doc-cell-blue'},
+          {title: '{{ _("Vertically centred")|escapejs }}', value: 'doc-cell-middle'}
         ],
         style_formats_merge: true,
         style_formats: [
-          {title: 'Tabellenzelle: Gelb', selector: 'td,th', classes: 'doc-cell-yellow'},
-          {title: 'Tabellenzelle: Grün', selector: 'td,th', classes: 'doc-cell-green'},
-          {title: 'Tabellenzelle: Rot', selector: 'td,th', classes: 'doc-cell-red'},
-          {title: 'Tabellenzelle: Blau', selector: 'td,th', classes: 'doc-cell-blue'}
+          {title: '{{ _("Table cell: yellow")|escapejs }}', selector: 'td,th', classes: 'doc-cell-yellow'},
+          {title: '{{ _("Table cell: green")|escapejs }}', selector: 'td,th', classes: 'doc-cell-green'},
+          {title: '{{ _("Table cell: red")|escapejs }}', selector: 'td,th', classes: 'doc-cell-red'},
+          {title: '{{ _("Table cell: blue")|escapejs }}', selector: 'td,th', classes: 'doc-cell-blue'}
         ],
         font_family_formats: 'Arial=arial,helvetica,sans-serif; Calibri=calibri,arial,sans-serif; Courier New=courier new,courier,monospace; Georgia=georgia,palatino,serif; Times New Roman=times new roman,times,serif; Verdana=verdana,geneva,sans-serif',
         font_size_formats: '8pt 9pt 10pt 11pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
@@ -95,14 +99,14 @@
         codesample_languages: [
           {text: 'Bash / Shell', value: 'bash'},
           {text: 'PowerShell', value: 'powershell'},
-          {text: 'Cisco / Netzwerk-Konfiguration', value: 'none'},
+          {text: '{{ _("Cisco / network configuration")|escapejs }}', value: 'none'},
           {text: 'Python', value: 'python'},
           {text: 'JSON', value: 'json'},
           {text: 'YAML', value: 'yaml'},
           {text: 'SQL', value: 'sql'},
           {text: 'HTML/XML', value: 'markup'},
           {text: 'JavaScript', value: 'javascript'},
-          {text: 'Nur Text', value: 'plaintext'}
+          {text: '{{ _("Plain text")|escapejs }}', value: 'plaintext'}
         ],
         browser_spellcheck: true,
         contextmenu: 'link image table codesample',
@@ -127,7 +131,7 @@
             if (!file) return;
             const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
             if (!allowedTypes.includes(file.type)) {
-              window.alert('Unterstützt werden PNG, JPEG, GIF und WebP.');
+              window.alert('{{ _("Supported formats are PNG, JPEG, GIF and WebP.")|escapejs }}');
               return;
             }
             const reader = new FileReader();
@@ -135,7 +139,7 @@
               alt: file.name,
               title: file.name
             }));
-            reader.addEventListener('error', () => window.alert('Das Bild konnte nicht gelesen werden.'));
+            reader.addEventListener('error', () => window.alert('{{ _("The image could not be read.")|escapejs }}'));
             reader.readAsDataURL(file);
           }, {once: true});
           picker.click();
@@ -170,13 +174,13 @@
             picker.click();
           };
           const palette = [
-            ['Gelb', '#fff3bf'], ['Grün', '#d3f9d8'], ['Blau', '#dbeafe'],
-            ['Rot', '#ffe3e3'], ['Orange', '#ffe8cc'], ['Grau', '#e9ecef'],
-            ['Dunkelgrün', '#a5bf60'], ['Dunkelblau', '#206bc4'], ['Dunkelgrau', '#343a40']
+            ['{{ _("Yellow")|escapejs }}', '#fff3bf'], ['{{ _("Green")|escapejs }}', '#d3f9d8'], ['{{ _("Blue")|escapejs }}', '#dbeafe'],
+            ['{{ _("Red")|escapejs }}', '#ffe3e3'], ['{{ _("Orange")|escapejs }}', '#ffe8cc'], ['{{ _("Grey")|escapejs }}', '#e9ecef'],
+            ['{{ _("Dark green")|escapejs }}', '#a5bf60'], ['{{ _("Dark blue")|escapejs }}', '#206bc4'], ['{{ _("Dark grey")|escapejs }}', '#343a40']
           ];
           editor.ui.registry.addMenuButton('tablecellcolor', {
             icon: 'highlight-bg-color',
-            tooltip: 'Farbeimer für Tabellenzellen',
+            tooltip: '{{ _("Table cell colour")|escapejs }}',
             fetch: callback => callback([
               ...palette.map(([name, color]) => ({
                 type: 'menuitem',
@@ -184,8 +188,8 @@
                 onAction: () => applyCellColor(color)
               })),
               {type: 'separator'},
-              {type: 'menuitem', text: 'Eigene Farbe …', onAction: chooseCellColor},
-              {type: 'menuitem', text: 'Zellfarbe entfernen', onAction: () => applyCellColor('')}
+              {type: 'menuitem', text: '{{ _("Custom colour …")|escapejs }}', onAction: chooseCellColor},
+              {type: 'menuitem', text: '{{ _("Remove cell colour")|escapejs }}', onAction: () => applyCellColor('')}
             ])
           });
         }
@@ -202,7 +206,7 @@
             credentials: 'same-origin'
           }).then(async response => {
             const payload = await response.json();
-            if (!response.ok) throw new Error(payload.error || 'Upload fehlgeschlagen');
+            if (!response.ok) throw new Error(payload.error || '{{ _("Upload failed")|escapejs }}');
             resolve(payload.location);
           }).catch(error => reject(error.message));
         })
@@ -214,6 +218,6 @@
 
 {% block pre_form_fields %}
   {% if not object.pk %}
-    <div class="alert alert-info">Eingefügte oder hineinkopierte Bilder werden beim ersten Speichern automatisch als Medien der neuen Dokumentation abgelegt. Nach dem ersten Speichern ist zusätzlich der direkte Bildupload verfügbar.</div>
+    <div class="alert alert-info">{% trans "Pasted images are stored automatically as media of the new document when it is first saved. After the first save, direct image upload is also available." %}</div>
   {% endif %}
 {% endblock pre_form_fields %}

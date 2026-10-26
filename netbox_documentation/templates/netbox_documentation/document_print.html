@@ -1,9 +1,10 @@
+{% load i18n %}
 <!doctype html>
-<html lang="de">
+{% get_current_language as LANGUAGE_CODE %}<html lang="{{ LANGUAGE_CODE }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ object.title }} – Druckansicht</title>
+  <title>{{ object.title }} – {% trans "Print view" %}</title>
   <style>
     :root { color-scheme: light; }
     * { box-sizing: border-box; }
@@ -56,19 +57,19 @@
 </head>
 <body>
   <div class="toolbar">
-    <button type="button" onclick="window.print()">Drucken / Als PDF speichern</button>
-    <a href="?orientation=portrait"{% if request.GET.orientation != 'landscape' %} class="active"{% endif %}>Hochformat</a>
-    <a href="?orientation=landscape"{% if request.GET.orientation == 'landscape' %} class="active"{% endif %}>Querformat</a>
-    <a href="{{ object.get_absolute_url }}">Zurück zur Dokumentation</a>
+    <button type="button" onclick="window.print()">{% trans "Print / save as PDF" %}</button>
+    <a href="?orientation=portrait"{% if request.GET.orientation != 'landscape' %} class="active"{% endif %}>{% trans "Portrait" %}</a>
+    <a href="?orientation=landscape"{% if request.GET.orientation == 'landscape' %} class="active"{% endif %}>{% trans "Landscape" %}</a>
+    <a href="{{ object.get_absolute_url }}">{% trans "Back to document" %}</a>
   </div>
   <article{% if request.GET.orientation == 'landscape' %} class="landscape"{% endif %}>
     <header>
       <h1>{{ object.title }}</h1>
       {% if object.summary %}<p class="summary">{{ object.summary }}</p>{% endif %}
       <div class="meta">
-        {% if object.category %}<span>Ordner: {{ object.category }}</span>{% endif %}
-        <span>Stand: {{ object.last_updated|date:"d.m.Y H:i" }}</span>
-        {% if object.assignments.all %}<span>Zugeordnet: {% for assignment in object.assignments.all %}{{ assignment.assigned_object }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}
+        {% if object.category %}<span>{% trans "Folder" %}: {{ object.category }}</span>{% endif %}
+        <span>{% trans "Last updated" %}: {{ object.last_updated|date:"SHORT_DATETIME_FORMAT" }}</span>
+        {% if object.assignments.all %}<span>{% trans "Assigned to" %}: {% for assignment in object.assignments.all %}{{ assignment.assigned_object }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}
       </div>
     </header>
     <main class="content">{{ object.rendered_body|safe }}</main>

@@ -1,34 +1,35 @@
 {% extends 'base/layout.html' %}
+{% load i18n %}
 {% load form_helpers %}
 
-{% block title %}Dokumentationsarchiv{% endblock %}
+{% block title %}{% trans "Documentation archive" %}{% endblock %}
 
 {% block content %}
 <div class="row g-4">
   <div class="col-12 col-xl-6">
     <div class="card h-100">
-      <h5 class="card-header"><i class="mdi mdi-folder-zip"></i> Dokumentationen exportieren</h5>
+      <h5 class="card-header"><i class="mdi mdi-folder-zip"></i> {% trans "Export documents" %}</h5>
       <div class="card-body">
-        <p>Mehrere Ordner suchen und hinzufügen. Alle enthaltenen Dokumentationen werden gemeinsam mit Objektzuordnungen und Anhängen heruntergeladen.</p>
+        <p>{% trans "Search for and add several folders. All contained documents are downloaded together with their object assignments and attachments." %}</p>
         <form method="post">
           {% csrf_token %}
           <input type="hidden" name="action" value="export">
           {% render_form export_form %}
-          <button type="submit" class="btn btn-primary"><i class="mdi mdi-download"></i> ZIP herunterladen</button>
+          <button type="submit" class="btn btn-primary"><i class="mdi mdi-download"></i> {% trans "Download ZIP" %}</button>
         </form>
       </div>
     </div>
   </div>
   <div class="col-12 col-xl-6">
     <div class="card h-100">
-      <h5 class="card-header"><i class="mdi mdi-folder-upload"></i> Dokumentationen importieren</h5>
+      <h5 class="card-header"><i class="mdi mdi-folder-upload"></i> {% trans "Import documents" %}</h5>
       <div class="card-body">
-        <p>Ein zuvor mit diesem Plugin erzeugtes ZIP-Archiv hochladen. Nicht vorhandene NetBox-Zielobjekte werden sicher übersprungen.</p>
+        <p>{% trans "Upload a ZIP archive previously created with this plugin. Missing NetBox target objects are skipped safely." %}</p>
         <form method="post" enctype="multipart/form-data">
           {% csrf_token %}
           <input type="hidden" name="action" value="import">
           {% render_form import_form %}
-          <button type="submit" class="btn btn-primary"><i class="mdi mdi-upload"></i> ZIP importieren</button>
+          <button type="submit" class="btn btn-primary"><i class="mdi mdi-upload"></i> {% trans "Import ZIP" %}</button>
         </form>
       </div>
     </div>

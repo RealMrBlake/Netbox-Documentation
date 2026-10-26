@@ -1,3 +1,4 @@
+{% load i18n %}
 <li class="netbox-doc-tree-item" data-name="{{ node.object.name|lower }}">
   <details open>
     <summary class="netbox-doc-tree-summary">
@@ -13,7 +14,7 @@
         {% include 'netbox_documentation/inc/document_tree_file.html' with document=document %}
       {% endfor %}
       {% if not node.children and not node.documents %}
-      <li class="netbox-doc-tree-empty text-muted">Leer</li>
+      <li class="netbox-doc-tree-empty text-muted">{% trans "Empty" %}</li>
       {% endif %}
     </ul>
   </details>

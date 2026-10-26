@@ -1,3 +1,4 @@
+{% load i18n %}
 <div class="netbox-explorer-pane d-none" data-folder="{{ node.object.pk }}" data-parent="{{ parent|default:'root' }}" data-title="{{ node.object.name }}" data-url="{{ node.object.get_absolute_url }}">
   {% for child in node.children %}
     {% include 'netbox_documentation/inc/explorer_folder_tile.html' with node=child %}
@@ -5,7 +6,7 @@
   {% for document in node.documents %}
     {% include 'netbox_documentation/inc/explorer_file_tile.html' with document=document %}
   {% endfor %}
-  {% if not node.children and not node.documents %}<p class="text-muted netbox-explorer-empty">Dieser Ordner ist leer.</p>{% endif %}
+  {% if not node.children and not node.documents %}<p class="text-muted netbox-explorer-empty">{% trans "This folder is empty." %}</p>{% endif %}
 </div>
 {% for child in node.children %}
   {% include 'netbox_documentation/inc/explorer_pane.html' with node=child parent=node.object.pk %}

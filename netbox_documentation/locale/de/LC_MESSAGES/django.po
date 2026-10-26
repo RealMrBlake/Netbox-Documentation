@@ -1,0 +1,1142 @@
+# German translation of netbox-documentation.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: netbox-documentation\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-26 20:23+0000\n"
+"PO-Revision-Date: 2026-10-26 20:30+0000\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: __init__.py:7
+msgid "NetBox Documentation"
+msgstr "NetBox Dokumentation"
+
+#: __init__.py:8
+msgid "Wiki and office documentation directly in NetBox"
+msgstr "Wiki und Office-Dokumentation direkt in NetBox"
+
+#: archive.py:117
+#, python-format
+msgid "The archive contains more than %(count)s files."
+msgstr "Das Archiv enthält mehr als %(count)s Dateien."
+
+#: archive.py:120
+msgid "The total extracted size exceeds the configured limit."
+msgstr "Die entpackte Gesamtgröße überschreitet das konfigurierte Limit."
+
+#: archive.py:124
+msgid "The archive contains an unsafe file path."
+msgstr "Das Archiv enthält einen unsicheren Dateipfad."
+
+#: archive.py:126
+msgid "The archive contains a suspiciously highly compressed file."
+msgstr "Das Archiv enthält eine verdächtig stark komprimierte Datei."
+
+#: archive.py:133
+msgid "The archive contains no valid manifest.json."
+msgstr "Das Archiv enthält kein gültiges manifest.json."
+
+#: archive.py:152
+#, python-format
+msgid ""
+"%(context)s: The tenant group “%(slug)s” does not exist on this instance. "
+"Create the tenant group first or repeat the import with an adjusted "
+"manifest.json."
+msgstr "%(context)s: Die Mandantengruppe „%(slug)s“ existiert auf dieser Instanz nicht. Bitte die Mandantengruppe vorher anlegen oder den Import mit einem angepassten manifest.json wiederholen."
+
+#: archive.py:173
+#, python-format
+msgid ""
+"%(context)s: The tenant “%(slug)s” does not exist on this instance. Create "
+"the tenant first or repeat the import with an adjusted manifest.json."
+msgstr "%(context)s: Der Mandant „%(slug)s“ existiert auf dieser Instanz nicht. Bitte den Mandanten vorher anlegen oder den Import mit einem angepassten manifest.json wiederholen."
+
+#: archive.py:189
+#, python-format
+msgid "Folder “%(name)s”"
+msgstr "Ordner „%(name)s“"
+
+#: archive.py:194 archive.py:271
+#, python-format
+msgid ""
+"%(context)s: The tenant “%(tenant)s” does not belong to the tenant group "
+"“%(group)s” on this instance."
+msgstr "%(context)s: Der Mandant „%(tenant)s“ gehört auf dieser Instanz nicht zur Mandantengruppe „%(group)s“."
+
+#: archive.py:232
+msgid "The uploaded file is not a valid ZIP archive."
+msgstr "Die hochgeladene Datei ist kein gültiges ZIP-Archiv."
+
+#: archive.py:237
+msgid "Archive format or version is not supported."
+msgstr "Archivformat oder Version wird nicht unterstützt."
+
+#: archive.py:240
+msgid "The document list in the archive is invalid."
+msgstr "Die Dokumentliste im Archiv ist ungültig."
+
+#: archive.py:245
+msgid "The archive contains an incomplete document entry."
+msgstr "Das Archiv enthält einen unvollständigen Dokumenteintrag."
+
+#: archive.py:249
+msgid "A document body is missing or not UTF-8 encoded."
+msgstr "Ein Dokumentinhalt fehlt oder ist nicht UTF-8-kodiert."
+
+#: archive.py:266
+#, python-format
+msgid "Document “%(title)s”"
+msgstr "Dokument „%(title)s“"
+
+#: archive.py:297
+#, python-format
+msgid "Attachment %(name)s is missing from the archive."
+msgstr "Anhang %(name)s fehlt im Archiv."
+
+#: archive.py:302
+#, python-format
+msgid "The attachment %(name)s uses a file type that is not allowed."
+msgstr "Der Anhang %(name)s verwendet einen nicht erlaubten Dateityp."
+
+#: embedded_images.py:24
+msgid "A pasted image contains invalid Base64 data."
+msgstr "Ein eingefügtes Bild enthält ungültige Base64-Daten."
+
+#: embedded_images.py:30
+msgid "Pasted content is not a valid image file."
+msgstr "Ein eingefügter Inhalt ist keine gültige Bilddatei."
+
+#: embedded_images.py:40 embedded_images.py:51
+msgid "The pasted images exceed the allowed total size."
+msgstr "Die eingefügten Bilder überschreiten die erlaubte Gesamtgröße."
+
+#: forms.py:47 forms.py:62
+msgid "Content"
+msgstr "Inhalt"
+
+#: forms.py:49
+msgid "Formatted text with tables, colours, fonts and sizes."
+msgstr "Formatierter Text mit Tabellen, Farben, Schriftarten und Größen."
+
+#: forms.py:51 forms.py:167 tables.py:18
+#: templates/netbox_documentation/document.html:132
+#: templates/netbox_documentation/document_print.html:70
+msgid "Folder"
+msgstr "Ordner"
+
+#: forms.py:53 forms.py:160
+msgid "Tenant group"
+msgstr "Mandantengruppe"
+
+#: forms.py:56 forms.py:163
+msgid "Tenant"
+msgstr "Mandant"
+
+#: forms.py:61
+msgid "Document"
+msgstr "Dokumentation"
+
+#: forms.py:92 forms.py:183
+msgid "The tenant does not belong to the selected tenant group."
+msgstr "Der Mandant gehört nicht zur ausgewählten Mandantengruppe."
+
+#: forms.py:121
+msgid "Object type"
+msgstr "Objekttyp"
+
+#: forms.py:123 tables.py:29
+msgid "NetBox object"
+msgstr "NetBox-Objekt"
+
+#: forms.py:126
+msgid "Assign document"
+msgstr "Dokumentation zuordnen"
+
+#: forms.py:158
+msgid "Parent folder"
+msgstr "Übergeordneter Ordner"
+
+#: forms.py:188
+msgid "Word, Excel or PDF file"
+msgstr "Word-, Excel- oder PDF-Datei"
+
+#: forms.py:190
+msgid "Title"
+msgstr "Titel"
+
+#: forms.py:190
+msgid ""
+"Leave empty to use the file name as title. Multi-sheet imports use the sheet "
+"names."
+msgstr "Leer lassen, um den Dateinamen als Titel zu verwenden. Beim Mehrblattimport werden die Blattnamen verwendet."
+
+#: forms.py:193
+msgid "Append to existing document"
+msgstr "An bestehende Dokumentation anhängen"
+
+#: forms.py:193
+msgid "Adds the imported content to the end of an existing document."
+msgstr "Fügt den importierten Inhalt am Ende einer vorhandenen Dokumentation an."
+
+#: forms.py:196
+msgid "Existing document"
+msgstr "Bestehende Dokumentation"
+
+#: forms.py:196
+msgid "Target document for appending."
+msgstr "Zieldokumentation für die Funktion Anhängen."
+
+#: forms.py:201
+msgid "Excel with multiple worksheets – one document per sheet"
+msgstr "Excel mit mehreren Arbeitsblättern – je Blatt eine Dokumentation"
+
+#: forms.py:202
+msgid ""
+"Creates a separate document in the selected target folder from every non-"
+"empty Excel worksheet."
+msgstr "Erstellt aus jedem nicht leeren Excel-Arbeitsblatt eine eigene Dokumentation im gewählten Zielordner."
+
+#: forms.py:208
+msgid "Flatten Excel tables"
+msgstr "Excel-Tabellen glätten"
+
+#: forms.py:209
+msgid ""
+"Imports plain cells outside tables as document-style text. Only ranges "
+"explicitly defined in Excel via Insert → Table remain tables."
+msgstr "Übernimmt normale Zellen ohne Tabelle als dokumentartigen Text. Nur in Excel ausdrücklich über Einfügen → Tabelle definierte Bereiche bleiben Tabellen."
+
+#: forms.py:214
+msgid "Target folder / category"
+msgstr "Zielordner / Kategorie"
+
+#: forms.py:214
+msgid "Required for the Excel multi-sheet import."
+msgstr "Für den Excel-Mehrblattimport verpflichtend."
+
+#: forms.py:226
+msgid "Select a document to append to."
+msgstr "Zum Anhängen muss eine Dokumentation gewählt werden."
+
+#: forms.py:230
+msgid "The multi-sheet import requires an XLSX or XLSM file."
+msgstr "Der Mehrblattimport benötigt eine XLSX- oder XLSM-Datei."
+
+#: forms.py:232
+msgid "Select a target folder for the generated documents."
+msgstr "Bitte einen Zielordner für die erzeugten Dokumentationen auswählen."
+
+#: forms.py:234
+msgid "Multi-sheet import and appending cannot be combined."
+msgstr "Mehrblattimport und Anhängen können nicht kombiniert werden."
+
+#: forms.py:237 views.py:543
+#, python-format
+msgid "The file is larger than %(limit)s MB."
+msgstr "Die Datei ist größer als %(limit)s MB."
+
+#: forms.py:244
+msgid "Folders and categories"
+msgstr "Ordner und Kategorien"
+
+#: forms.py:245
+msgid "Search for and add one or more folders."
+msgstr "Einen oder mehrere Ordner suchen und hinzufügen."
+
+#: forms.py:248
+msgid "Include subfolders"
+msgstr "Unterordner einbeziehen"
+
+#: forms.py:249
+msgid "Exports documents from all subfolders."
+msgstr "Exportiert Dokumentationen aus allen untergeordneten Ordnern."
+
+#: forms.py:261
+msgid "ZIP archive"
+msgstr "ZIP-Archiv"
+
+#: forms.py:264
+msgid "Update existing documents with the same slug"
+msgstr "Bestehende Dokumentationen mit gleicher Kennung aktualisieren"
+
+#: forms.py:265
+msgid ""
+"Without this option, name conflicts create new documents with a numbered "
+"slug."
+msgstr "Ohne diese Option werden bei Namenskonflikten neue Dokumentationen mit einer fortlaufenden Kennung angelegt."
+
+#: forms.py:271
+msgid "Select a ZIP archive created by this plugin."
+msgstr "Bitte ein vom Plugin erzeugtes ZIP-Archiv auswählen."
+
+#: forms.py:274
+#, python-format
+msgid "The archive is larger than %(limit)s MB."
+msgstr "Das Archiv ist größer als %(limit)s MB."
+
+#: forms.py:280 navigation.py:10
+#: templates/netbox_documentation/document_import.html:13
+#: templates/netbox_documentation/excel_import_preview.html:49
+msgid "Import"
+msgstr "Importieren"
+
+#: forms.py:285 templates/netbox_documentation/excel_import_preview.html:53
+msgid "Document title"
+msgstr "Dokumenttitel"
+
+#: forms.py:292
+msgid "A selected worksheet requires a title."
+msgstr "Für ein ausgewähltes Arbeitsblatt ist ein Titel erforderlich."
+
+#: forms.py:303
+msgid "Select at least one worksheet."
+msgstr "Bitte mindestens ein Arbeitsblatt auswählen."
+
+#: forms.py:306
+msgid "The worksheet selection is invalid."
+msgstr "Die Arbeitsblattauswahl ist ungültig."
+
+#: forms.py:309
+msgid "Selected worksheets must not have the same document title."
+msgstr "Ausgewählte Arbeitsblätter dürfen nicht denselben Dokumenttitel haben."
+
+#: importers.py:51
+msgid "Please save legacy .doc/.xls files as .docx/.xlsx first."
+msgstr "Alte .doc/.xls-Dateien bitte zuerst als .docx/.xlsx speichern."
+
+#: importers.py:52
+msgid "Supported formats are DOCX, XLSX, XLSM, PDF, Markdown and text."
+msgstr "Unterstützt werden DOCX, XLSX, XLSM, PDF, Markdown und Text."
+
+#: importers.py:100
+msgid "The workbook contains no data."
+msgstr "Die Arbeitsmappe enthält keine Daten."
+
+#: importers.py:114
+msgid "The multi-sheet import supports XLSX and XLSM files."
+msgstr "Der Mehrblattimport unterstützt XLSX- und XLSM-Dateien."
+
+#: importers.py:161
+msgid "The workbook contains no data or supported images."
+msgstr "Die Arbeitsmappe enthält keine Daten oder unterstützten Bilder."
+
+#: importers.py:353
+#, python-format
+msgid "Preview limited to %(rows)s rows."
+msgstr "Vorschau auf %(rows)s Zeilen begrenzt."
+
+#: importers.py:403
+#, python-format
+msgid "Preview limited to %(rows)s of %(total)s rows."
+msgstr "Vorschau auf %(rows)s von %(total)s Zeilen begrenzt."
+
+#: importers.py:415
+#, python-format
+msgid "Page %(number)s"
+msgstr "Seite %(number)s"
+
+#: importers.py:417
+msgid "The PDF contains no extractable text. Scanned documents require OCR."
+msgstr "Das PDF enthält keinen extrahierbaren Text. Für Scans ist OCR erforderlich."
+
+#: importers.py:418
+msgid "PDF layout and images cannot be imported completely."
+msgstr "PDF-Layout und Bilder können nicht vollständig übernommen werden."
+
+#: models.py:12
+msgid "Rich text"
+msgstr "Rich Text"
+
+#: models.py:12 models.py:18
+msgid "Markdown"
+msgstr "Markdown"
+
+#: models.py:16
+msgid "title"
+msgstr "Titel"
+
+#: models.py:17 models.py:82
+msgid "slug"
+msgstr "Kennung"
+
+#: models.py:18
+msgid "body"
+msgstr "Inhalt"
+
+#: models.py:19
+msgid "body format"
+msgstr "Inhaltsformat"
+
+#: models.py:20
+msgid "summary"
+msgstr "Zusammenfassung"
+
+#: models.py:21
+msgid "published"
+msgstr "veröffentlicht"
+
+#: models.py:22 models.py:97
+msgid "folder"
+msgstr "Ordner"
+
+#: models.py:25 models.py:87
+msgid "tenant group"
+msgstr "Mandantengruppe"
+
+#: models.py:29 models.py:91
+msgid "tenant"
+msgstr "Mandant"
+
+#: models.py:34 models.py:138 models.py:167
+msgid "document"
+msgstr "Dokumentation"
+
+#: models.py:35
+msgid "documents"
+msgstr "Dokumentationen"
+
+#: models.py:81
+msgid "name"
+msgstr "Name"
+
+#: models.py:83
+msgid "parent folder"
+msgstr "übergeordneter Ordner"
+
+#: models.py:84
+msgid "description"
+msgstr "Beschreibung"
+
+#: models.py:98
+msgid "folders"
+msgstr "Ordner"
+
+#: models.py:132
+msgid "A folder cannot be placed inside itself or one of its subfolders."
+msgstr "Ein Ordner kann nicht sich selbst oder einem Unterordner untergeordnet werden."
+
+#: models.py:139
+msgid "object type"
+msgstr "Objekttyp"
+
+#: models.py:140
+msgid "object ID"
+msgstr "Objekt-ID"
+
+#: models.py:142
+msgid "note"
+msgstr "Notiz"
+
+#: models.py:146
+msgid "document assignment"
+msgstr "Dokumentzuordnung"
+
+#: models.py:147
+msgid "document assignments"
+msgstr "Dokumentzuordnungen"
+
+#: models.py:168
+msgid "file"
+msgstr "Datei"
+
+#: models.py:169
+msgid "original name"
+msgstr "Originalname"
+
+#: models.py:170
+msgid "content type"
+msgstr "Inhaltstyp"
+
+#: models.py:171
+msgid "size"
+msgstr "Größe"
+
+#: models.py:175
+msgid "attachment"
+msgstr "Anhang"
+
+#: models.py:176
+msgid "attachments"
+msgstr "Anhänge"
+
+#: navigation.py:6 templates/netbox_documentation/inc/object_documents.html:3
+msgid "Documentation"
+msgstr "Dokumentation"
+
+#: navigation.py:7
+msgid "Wiki"
+msgstr "Wiki"
+
+#: navigation.py:8 tables.py:19
+#: templates/netbox_documentation/document_tree.html:4
+#: templates/netbox_documentation/document_tree.html:36
+#: templates/netbox_documentation/document_tree.html:44
+#: templates/netbox_documentation/documentcategory.html:36
+msgid "Documents"
+msgstr "Dokumentationen"
+
+#: navigation.py:9
+msgid "New"
+msgstr "Neu"
+
+#: navigation.py:12 tables.py:9
+#: templates/netbox_documentation/document.html:133
+msgid "Assignments"
+msgstr "Zuordnungen"
+
+#: navigation.py:13 templates/netbox_documentation/inc/object_documents.html:11
+msgid "Assign"
+msgstr "Zuordnen"
+
+#: navigation.py:15 templates/netbox_documentation/documentcategory_tree.html:4
+msgid "Folders & categories"
+msgstr "Ordner & Kategorien"
+
+#: navigation.py:16
+#: templates/netbox_documentation/documentcategory_tree.html:12
+msgid "Create folder"
+msgstr "Ordner erstellen"
+
+#: navigation.py:18
+msgid "ZIP export & import"
+msgstr "ZIP Export & Import"
+
+#: templates/netbox_documentation/document.html:113
+msgid "Focus view"
+msgstr "Großansicht"
+
+#: templates/netbox_documentation/document.html:116
+msgid "Print / PDF"
+msgstr "Drucken / PDF"
+
+#: templates/netbox_documentation/document.html:123
+msgid "Exit focus view"
+msgstr "Großansicht beenden"
+
+#: templates/netbox_documentation/document.html:128
+#: templates/netbox_documentation/documentcategory.html:18
+msgid "Tenancy"
+msgstr "Mandantenzuordnung"
+
+#: templates/netbox_documentation/document.html:134
+msgid "Not assigned yet"
+msgstr "Noch nicht zugeordnet"
+
+#: templates/netbox_documentation/document.html:136
+msgid "Original files"
+msgstr "Originaldateien"
+
+#: templates/netbox_documentation/document.html:163
+msgid "Open table in focus view"
+msgstr "Tabelle in Großansicht öffnen"
+
+#: templates/netbox_documentation/document.html:178
+#: templates/netbox_documentation/document.html:195
+msgid "Copy"
+msgstr "Kopieren"
+
+#: templates/netbox_documentation/document.html:194
+msgid "Copied"
+msgstr "Kopiert"
+
+#: templates/netbox_documentation/document_archive.html:5
+msgid "Documentation archive"
+msgstr "Dokumentationsarchiv"
+
+#: templates/netbox_documentation/document_archive.html:11
+msgid "Export documents"
+msgstr "Dokumentationen exportieren"
+
+#: templates/netbox_documentation/document_archive.html:13
+msgid ""
+"Search for and add several folders. All contained documents are downloaded "
+"together with their object assignments and attachments."
+msgstr "Mehrere Ordner suchen und hinzufügen. Alle enthaltenen Dokumentationen werden gemeinsam mit Objektzuordnungen und Anhängen heruntergeladen."
+
+#: templates/netbox_documentation/document_archive.html:18
+msgid "Download ZIP"
+msgstr "ZIP herunterladen"
+
+#: templates/netbox_documentation/document_archive.html:25
+msgid "Import documents"
+msgstr "Dokumentationen importieren"
+
+#: templates/netbox_documentation/document_archive.html:27
+msgid ""
+"Upload a ZIP archive previously created with this plugin. Missing NetBox "
+"target objects are skipped safely."
+msgstr "Ein zuvor mit diesem Plugin erzeugtes ZIP-Archiv hochladen. Nicht vorhandene NetBox-Zielobjekte werden sicher übersprungen."
+
+#: templates/netbox_documentation/document_archive.html:32
+msgid "Import ZIP"
+msgstr "ZIP importieren"
+
+#: templates/netbox_documentation/document_edit.html:23
+msgid ""
+"The rich text editor could not be loaded from the local plugin endpoint. "
+"Please check the browser console and network log."
+msgstr "Der Rich-Text-Editor konnte nicht vom lokalen Plugin-Endpunkt geladen werden. Bitte Browser-Konsole und Netzwerkprotokoll prüfen."
+
+#: templates/netbox_documentation/document_edit.html:53
+msgid "Standard with borders"
+msgstr "Standard mit Rahmen"
+
+#: templates/netbox_documentation/document_edit.html:54
+msgid "Compact"
+msgstr "Kompakt"
+
+#: templates/netbox_documentation/document_edit.html:55
+msgid "Striped rows"
+msgstr "Gestreifte Zeilen"
+
+#: templates/netbox_documentation/document_edit.html:56
+msgid "Blue header"
+msgstr "Blaue Kopfzeile"
+
+#: templates/netbox_documentation/document_edit.html:57
+msgid "Green header"
+msgstr "Grüne Kopfzeile"
+
+#: templates/netbox_documentation/document_edit.html:58
+msgid "Dark header"
+msgstr "Dunkle Kopfzeile"
+
+#: templates/netbox_documentation/document_edit.html:59
+msgid "No borders"
+msgstr "Ohne Rahmen"
+
+#: templates/netbox_documentation/document_edit.html:60
+msgid "Full width"
+msgstr "Volle Breite"
+
+#: templates/netbox_documentation/document_edit.html:63
+msgid "Normal"
+msgstr "Normal"
+
+#: templates/netbox_documentation/document_edit.html:64
+msgid "Highlight yellow"
+msgstr "Gelb hervorheben"
+
+#: templates/netbox_documentation/document_edit.html:65
+msgid "Highlight green"
+msgstr "Grün hervorheben"
+
+#: templates/netbox_documentation/document_edit.html:66
+msgid "Highlight red"
+msgstr "Rot hervorheben"
+
+#: templates/netbox_documentation/document_edit.html:67
+msgid "Highlight blue"
+msgstr "Blau hervorheben"
+
+#: templates/netbox_documentation/document_edit.html:68
+msgid "Vertically centred"
+msgstr "Vertikal mittig"
+
+#: templates/netbox_documentation/document_edit.html:72
+msgid "Table cell: yellow"
+msgstr "Tabellenzelle: Gelb"
+
+#: templates/netbox_documentation/document_edit.html:73
+msgid "Table cell: green"
+msgstr "Tabellenzelle: Grün"
+
+#: templates/netbox_documentation/document_edit.html:74
+msgid "Table cell: red"
+msgstr "Tabellenzelle: Rot"
+
+#: templates/netbox_documentation/document_edit.html:75
+msgid "Table cell: blue"
+msgstr "Tabellenzelle: Blau"
+
+#: templates/netbox_documentation/document_edit.html:102
+msgid "Cisco / network configuration"
+msgstr "Cisco / Netzwerk-Konfiguration"
+
+#: templates/netbox_documentation/document_edit.html:109
+msgid "Plain text"
+msgstr "Nur Text"
+
+#: templates/netbox_documentation/document_edit.html:134
+msgid "Supported formats are PNG, JPEG, GIF and WebP."
+msgstr "Unterstützt werden PNG, JPEG, GIF und WebP."
+
+#: templates/netbox_documentation/document_edit.html:142
+msgid "The image could not be read."
+msgstr "Das Bild konnte nicht gelesen werden."
+
+#: templates/netbox_documentation/document_edit.html:177
+msgid "Yellow"
+msgstr "Gelb"
+
+#: templates/netbox_documentation/document_edit.html:177
+msgid "Green"
+msgstr "Grün"
+
+#: templates/netbox_documentation/document_edit.html:177
+msgid "Blue"
+msgstr "Blau"
+
+#: templates/netbox_documentation/document_edit.html:178
+msgid "Red"
+msgstr "Rot"
+
+#: templates/netbox_documentation/document_edit.html:178
+msgid "Orange"
+msgstr "Orange"
+
+#: templates/netbox_documentation/document_edit.html:178
+msgid "Grey"
+msgstr "Grau"
+
+#: templates/netbox_documentation/document_edit.html:179
+msgid "Dark green"
+msgstr "Dunkelgrün"
+
+#: templates/netbox_documentation/document_edit.html:179
+msgid "Dark blue"
+msgstr "Dunkelblau"
+
+#: templates/netbox_documentation/document_edit.html:179
+msgid "Dark grey"
+msgstr "Dunkelgrau"
+
+#: templates/netbox_documentation/document_edit.html:183
+msgid "Table cell colour"
+msgstr "Farbeimer für Tabellenzellen"
+
+#: templates/netbox_documentation/document_edit.html:191
+msgid "Custom colour …"
+msgstr "Eigene Farbe …"
+
+#: templates/netbox_documentation/document_edit.html:192
+msgid "Remove cell colour"
+msgstr "Zellfarbe entfernen"
+
+#: templates/netbox_documentation/document_edit.html:209
+msgid "Upload failed"
+msgstr "Upload fehlgeschlagen"
+
+#: templates/netbox_documentation/document_edit.html:221
+msgid ""
+"Pasted images are stored automatically as media of the new document when it "
+"is first saved. After the first save, direct image upload is also available."
+msgstr "Eingefügte oder hineinkopierte Bilder werden beim ersten Speichern automatisch als Medien der neuen Dokumentation abgelegt. Nach dem ersten Speichern ist zusätzlich der direkte Bildupload verfügbar."
+
+#: templates/netbox_documentation/document_import.html:4
+msgid "Import document"
+msgstr "Dokument importieren"
+
+#: templates/netbox_documentation/document_import.html:7
+msgid "Import Word, Excel or PDF"
+msgstr "Word, Excel oder PDF importieren"
+
+#: templates/netbox_documentation/document_import.html:10
+#: templates/netbox_documentation/document_import.html:11
+msgid "Import notes"
+msgstr "Importhinweise"
+
+#: templates/netbox_documentation/document_import.html:11
+msgid ""
+"DOCX keeps headings, lists and tables. A regular XLSX import merges all "
+"sheets. The multi-sheet import creates one document per sheet in the target "
+"folder. PDF requires a real text layer; OCR for scans is not included."
+msgstr "DOCX übernimmt Überschriften, Listen und Tabellen. Beim normalen XLSX-Import werden alle Blätter zusammengeführt. Der Mehrblattimport erzeugt je Blatt eine Dokumentation im Zielordner. PDF benötigt eine echte Textebene; Scan-OCR ist nicht enthalten."
+
+#: templates/netbox_documentation/document_print.html:7
+msgid "Print view"
+msgstr "Druckansicht"
+
+#: templates/netbox_documentation/document_print.html:60
+msgid "Print / save as PDF"
+msgstr "Drucken / Als PDF speichern"
+
+#: templates/netbox_documentation/document_print.html:61
+msgid "Portrait"
+msgstr "Hochformat"
+
+#: templates/netbox_documentation/document_print.html:62
+msgid "Landscape"
+msgstr "Querformat"
+
+#: templates/netbox_documentation/document_print.html:63
+msgid "Back to document"
+msgstr "Zurück zur Dokumentation"
+
+#: templates/netbox_documentation/document_print.html:71
+msgid "Last updated"
+msgstr "Stand"
+
+#: templates/netbox_documentation/document_print.html:72
+msgid "Assigned to"
+msgstr "Zugeordnet"
+
+#: templates/netbox_documentation/document_tree.html:9
+msgid "Search documents & folders…"
+msgstr "Dokumente & Ordner durchsuchen…"
+
+#: templates/netbox_documentation/document_tree.html:12
+msgid "Add"
+msgstr "Hinzufügen"
+
+#: templates/netbox_documentation/document_tree.html:15
+#: templates/netbox_documentation/document_tree.html:136
+msgid "New folder"
+msgstr "Neuer Ordner"
+
+#: templates/netbox_documentation/document_tree.html:17
+msgid "View"
+msgstr "Ansicht"
+
+#: templates/netbox_documentation/document_tree.html:18
+msgid "Explorer view"
+msgstr "Explorer-Ansicht"
+
+#: templates/netbox_documentation/document_tree.html:18
+msgid "Explorer"
+msgstr "Explorer"
+
+#: templates/netbox_documentation/document_tree.html:19
+msgid "Tree view"
+msgstr "Baumansicht"
+
+#: templates/netbox_documentation/document_tree.html:19
+msgid "Tree"
+msgstr "Baum"
+
+#: templates/netbox_documentation/document_tree.html:20
+#: templates/netbox_documentation/documentcategory_tree.html:14
+msgid "List view"
+msgstr "Listenansicht"
+
+#: templates/netbox_documentation/document_tree.html:20
+msgid "List"
+msgstr "Liste"
+
+#: templates/netbox_documentation/document_tree.html:29
+msgid "Back"
+msgstr "Zurück"
+
+#: templates/netbox_documentation/document_tree.html:30
+msgid "Parent folder (Backspace)"
+msgstr "Übergeordneter Ordner (Rücktaste)"
+
+#: templates/netbox_documentation/document_tree.html:32
+#: templates/netbox_documentation/document_tree.html:139
+msgid "Folder details"
+msgstr "Ordnerdetails"
+
+#: templates/netbox_documentation/document_tree.html:56
+msgid "No matches found."
+msgstr "Keine Treffer gefunden."
+
+#: templates/netbox_documentation/document_tree.html:83
+msgid "No documents yet."
+msgstr "Noch keine Dokumentationen vorhanden."
+
+#: templates/netbox_documentation/document_tree.html:134
+msgid "{folders} folders, {documents} documents"
+msgstr "{folders} Ordner, {documents} Dokument(e)"
+
+#: templates/netbox_documentation/document_tree.html:135
+msgid "Search results in all folders: "
+msgstr "Suchergebnisse in allen Ordnern: "
+
+#: templates/netbox_documentation/document_tree.html:137
+msgid "New document"
+msgstr "Neues Dokument"
+
+#: templates/netbox_documentation/document_tree.html:138
+msgid "Export folder as ZIP"
+msgstr "Ordner als ZIP exportieren"
+
+#: templates/netbox_documentation/document_tree.html:140
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+#: templates/netbox_documentation/document_tree.html:141
+msgid "Open"
+msgstr "Öffnen"
+
+#: templates/netbox_documentation/document_tree.html:142
+msgid "New subfolder"
+msgstr "Neuer Unterordner"
+
+#: templates/netbox_documentation/document_tree.html:143
+msgid "New document here"
+msgstr "Neues Dokument hier"
+
+#: templates/netbox_documentation/document_tree.html:144
+msgid "Rename / edit"
+msgstr "Umbenennen / Bearbeiten"
+
+#: templates/netbox_documentation/document_tree.html:145
+msgid "Export as ZIP"
+msgstr "Als ZIP exportieren"
+
+#: templates/netbox_documentation/document_tree.html:146
+msgid "Copy link"
+msgstr "Link kopieren"
+
+#: templates/netbox_documentation/document_tree.html:147
+msgid "Delete"
+msgstr "Löschen"
+
+#: templates/netbox_documentation/document_tree.html:148
+msgid "Open in new tab"
+msgstr "In neuem Tab öffnen"
+
+#: templates/netbox_documentation/document_tree.html:149
+msgid "Print / export as PDF"
+msgstr "Drucken / als PDF exportieren"
+
+#: templates/netbox_documentation/document_tree.html:150
+msgid "Close"
+msgstr "Schließen"
+
+#: templates/netbox_documentation/document_tree.html:151
+#: templates/netbox_documentation/inc/explorer_pane.html:9
+msgid "This folder is empty."
+msgstr "Dieser Ordner ist leer."
+
+#: templates/netbox_documentation/document_tree.html:152
+msgid "Unexpected response from the server ({status})."
+msgstr "Unerwartete Antwort vom Server ({status})."
+
+#: templates/netbox_documentation/document_tree.html:153
+msgid "“{document}” moved to “{folder}”."
+msgstr "„{document}“ verschoben nach „{folder}“."
+
+#: templates/netbox_documentation/document_tree.html:154
+msgid "Move failed – no connection to the server."
+msgstr "Verschieben fehlgeschlagen – keine Verbindung zum Server."
+
+#: templates/netbox_documentation/documentcategory.html:5
+msgid "Breadcrumb"
+msgstr "Brotkrumennavigation"
+
+#: templates/netbox_documentation/documentcategory.html:7
+msgid "Folders"
+msgstr "Ordner"
+
+#: templates/netbox_documentation/documentcategory.html:26
+msgid "Subfolders"
+msgstr "Unterordner"
+
+#: templates/netbox_documentation/documentcategory.html:30
+msgid "No subfolders"
+msgstr "Keine Unterordner"
+
+#: templates/netbox_documentation/documentcategory.html:40
+msgid "No documents in this folder"
+msgstr "Keine Dokumentationen in diesem Ordner"
+
+#: templates/netbox_documentation/documentcategory_tree.html:9
+msgid "Search folders…"
+msgstr "Ordner durchsuchen…"
+
+#: templates/netbox_documentation/documentcategory_tree.html:27
+msgid "No folders yet."
+msgstr "Noch keine Ordner vorhanden."
+
+#: templates/netbox_documentation/excel_import_preview.html:5
+msgid "Excel import preview"
+msgstr "Excel-Importvorschau"
+
+#: templates/netbox_documentation/excel_import_preview.html:21
+msgid "File"
+msgstr "Datei"
+
+#: templates/netbox_documentation/excel_import_preview.html:22
+msgid "Target folder"
+msgstr "Zielordner"
+
+#: templates/netbox_documentation/excel_import_preview.html:22
+msgid "No longer exists"
+msgstr "Nicht mehr vorhanden"
+
+#: templates/netbox_documentation/excel_import_preview.html:23
+msgid "Flatten"
+msgstr "Glätten"
+
+#: templates/netbox_documentation/excel_import_preview.html:23
+msgid "Yes"
+msgstr "Ja"
+
+#: templates/netbox_documentation/excel_import_preview.html:23
+msgid "No"
+msgstr "Nein"
+
+#: templates/netbox_documentation/excel_import_preview.html:33
+msgid "Update existing documents?"
+msgstr "Bestehende Dokumentationen aktualisieren?"
+
+#: templates/netbox_documentation/excel_import_preview.html:34
+msgid ""
+"The following documents already exist in the target folder. Their content "
+"will be overwritten; existing NetBox assignments are kept:"
+msgstr "Die folgenden Dokumentationen existieren bereits im Zielordner. Ihr Inhalt wird überschrieben; bestehende NetBox-Zuordnungen bleiben erhalten:"
+
+#: templates/netbox_documentation/excel_import_preview.html:58
+#, python-format
+msgid "%(counter)s image"
+msgid_plural "%(counter)s images"
+msgstr[0] "%(counter)s Bild"
+msgstr[1] "%(counter)s Bilder"
+
+#: templates/netbox_documentation/excel_import_preview.html:64
+msgid "Show preview of the generated document"
+msgstr "Vorschau der erzeugten Dokumentation anzeigen"
+
+#: templates/netbox_documentation/excel_import_preview.html:75
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: templates/netbox_documentation/excel_import_preview.html:78
+msgid "Overwrite and import"
+msgstr "Überschreiben und importieren"
+
+#: templates/netbox_documentation/excel_import_preview.html:78
+msgid "Import selected worksheets"
+msgstr "Ausgewählte Arbeitsblätter importieren"
+
+#: templates/netbox_documentation/inc/category_tree_node.html:11
+#: templates/netbox_documentation/inc/category_tree_node.html:27
+msgid "Edit"
+msgstr "Bearbeiten"
+
+#: templates/netbox_documentation/inc/document_tree_file.html:6
+#: templates/netbox_documentation/inc/explorer_file_tile.html:8
+msgid "Draft"
+msgstr "Entwurf"
+
+#: templates/netbox_documentation/inc/document_tree_node.html:17
+msgid "Empty"
+msgstr "Leer"
+
+#: templates/netbox_documentation/inc/explorer_folder_tile.html:8
+#, python-format
+msgid "%(counter)s item"
+msgid_plural "%(counter)s items"
+msgstr[0] "%(counter)s Element"
+msgstr[1] "%(counter)s Elemente"
+
+#: templates/netbox_documentation/inc/object_documents.html:9
+msgid "No documents assigned."
+msgstr "Keine Dokumentation zugeordnet."
+
+#: views.py:142
+msgid "The target folder does not exist."
+msgstr "Der Zielordner existiert nicht."
+
+#: views.py:259
+#, python-format
+msgid "Import failed: %(error)s"
+msgstr "Import fehlgeschlagen: %(error)s"
+
+#: views.py:293
+#, python-format
+msgid "%(name)s was imported."
+msgstr "%(name)s wurde importiert."
+
+#: views.py:303
+#, python-format
+msgid "Excel multi-sheet import failed: %(error)s"
+msgstr "Excel-Mehrblattimport fehlgeschlagen: %(error)s"
+
+#: views.py:348
+#, python-format
+msgid "%(count)s embedded image will be attached on import."
+msgid_plural "%(count)s embedded images will be attached on import."
+msgstr[0] "%(count)s eingebettetes Bild wird beim Import angefügt."
+msgstr[1] "%(count)s eingebettete Bilder werden beim Import angefügt."
+
+#: views.py:352 views.py:504 views.py:506
+msgid "Images"
+msgstr "Bilder"
+
+#: views.py:359
+msgid "… preview truncated …"
+msgstr "… Vorschau gekürzt …"
+
+#: views.py:377
+msgid "This import preview has expired. Please upload the Excel file again."
+msgstr "Diese Importvorschau ist abgelaufen. Bitte die Exceldatei erneut hochladen."
+
+#: views.py:383
+#, python-format
+msgid "The Excel preview could not be created: %(error)s"
+msgstr "Die Excel-Vorschau konnte nicht erzeugt werden: %(error)s"
+
+#: views.py:392
+msgid "Excel import was cancelled."
+msgstr "Excel-Import wurde abgebrochen."
+
+#: views.py:400
+#, python-format
+msgid "The Excel file could not be read again: %(error)s"
+msgstr "Die Exceldatei konnte nicht erneut gelesen werden: %(error)s"
+
+#: views.py:405
+msgid ""
+"The selected target folder no longer exists. Please start the import again."
+msgstr "Der gewählte Zielordner existiert nicht mehr. Bitte den Import erneut starten."
+
+#: views.py:427
+msgid "You are not allowed to update at least one document with the same name."
+msgstr "Mindestens eine gleichnamige Dokumentation darf nicht aktualisiert werden."
+
+#: views.py:433
+#, python-format
+msgid "The confirmation could not be displayed: %(error)s"
+msgstr "Die Bestätigung konnte nicht angezeigt werden: %(error)s"
+
+#: views.py:442
+#, python-format
+msgid "The selected Excel sheets could not be imported: %(error)s"
+msgstr "Die ausgewählten Excel-Blätter konnten nicht importiert werden: %(error)s"
+
+#: views.py:448
+#, python-format
+msgid ""
+"%(documents)s worksheets processed (%(created)s new, %(updated)s updated) in "
+"“%(category)s”; %(images)s images imported."
+msgstr "%(documents)s Arbeitsblätter verarbeitet (%(created)s neu, %(updated)s aktualisiert) in „%(category)s“; %(images)s Bilder übernommen."
+
+#: views.py:467 views.py:484
+#, python-format
+msgid "Imported from %(name)s"
+msgstr "Importiert aus %(name)s"
+
+#: views.py:540
+msgid "No file received."
+msgstr "Keine Datei empfangen."
+
+#: views.py:546
+msgid "The editor accepts JPEG, PNG, GIF and WebP."
+msgstr "Im Editor sind JPEG, PNG, GIF und WebP erlaubt."
+
+#: views.py:553
+msgid "The uploaded file is not a valid image."
+msgstr "Die hochgeladene Datei ist kein gültiges Bild."
+
+#: views.py:587
+msgid "The selected folders contain no exportable documents."
+msgstr "Die ausgewählten Ordner enthalten keine exportierbaren Dokumentationen."
+
+#: views.py:613
+#, python-format
+msgid "Archive imported: %(created)s created, %(updated)s updated."
+msgstr "Archiv importiert: %(created)s erstellt, %(updated)s aktualisiert."
+
+#: views.py:616
+#, python-format
+msgid "%(skipped)s unavailable object assignments were skipped."
+msgstr "%(skipped)s nicht verfügbare Objektzuordnungen wurden übersprungen."

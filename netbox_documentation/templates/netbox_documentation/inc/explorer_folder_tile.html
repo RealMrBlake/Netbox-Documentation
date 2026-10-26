@@ -1,8 +1,9 @@
+{% load i18n %}
 <div class="netbox-explorer-tile" data-open="{{ node.object.pk }}" data-name="{{ node.object.name|lower }}" title="{{ node.object.name }}" tabindex="0"
      data-kind="folder" data-pk="{{ node.object.pk }}" data-url="{{ node.object.get_absolute_url }}"
      {% if perms.netbox_documentation.change_documentcategory %}data-edit="{% url 'plugins:netbox_documentation:documentcategory_edit' pk=node.object.pk %}"{% endif %}
      {% if perms.netbox_documentation.delete_documentcategory %}data-delete="{% url 'plugins:netbox_documentation:documentcategory_delete' pk=node.object.pk %}"{% endif %}>
   <i class="mdi {% if node.children or node.documents %}mdi-folder{% else %}mdi-folder-outline{% endif %} netbox-explorer-icon text-warning"></i>
   <span class="netbox-explorer-label">{{ node.object.name }}</span>
-  <small class="text-muted">{% with c=node.children|length d=node.documents|length %}{{ c|add:d }}{% endwith %} Element(e)</small>
+  <small class="text-muted">{% with c=node.children|length d=node.documents|length %}{% with total=c|add:d %}{% blocktrans count counter=total %}{{ counter }} item{% plural %}{{ counter }} items{% endblocktrans %}{% endwith %}{% endwith %}</small>
 </div>

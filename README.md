@@ -6,7 +6,7 @@ A wiki for operational documentation and how-tos, integrated into NetBox.
 |---|---|
 | **Plugin name** | `netbox_documentation` |
 | **Package** | `netbox-documentation` |
-| **NetBox** | `>=4.0` |
+| **NetBox** | `4.4.0` – `4.7.x` |
 | **Python** | `>=3.10` |
 | **Repository** | <https://git.mrblake.cc/MrBlake/Netbox-Documentation> |
 
@@ -50,7 +50,7 @@ Folder tree:
 
 ## Compatibility
 
-- NetBox `>=4.0`
+- NetBox `4.4.0` – `4.7.x` (tested with 4.7.3)
 - Python `>=3.10`
 
 Test the plugin against your exact NetBox minor version in a staging instance
@@ -267,7 +267,8 @@ pytest
 ```
 
 Full UI/API tests require NetBox in the same virtualenv. The pure import tests
-are located in `netbox_documentation/tests/`.
+are located in `tests/`. `tests/test_metadata.py` fails when the NetBox range
+in this README diverges from `min_version`/`max_version` in the plugin config.
 
 ## Roadmap
 

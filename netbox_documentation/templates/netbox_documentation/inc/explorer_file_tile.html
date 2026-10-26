@@ -1,9 +1,10 @@
+{% load i18n %}
 <a class="netbox-explorer-tile" href="{{ document.get_absolute_url }}" data-name="{{ document.title|lower }}" title="{{ document.title }}"
    data-kind="document" data-pk="{{ document.pk }}" data-print="{% url 'plugins:netbox_documentation:document_print' pk=document.pk %}"
    {% if perms.netbox_documentation.change_document %}data-edit="{% url 'plugins:netbox_documentation:document_edit' pk=document.pk %}" data-move="{% url 'plugins:netbox_documentation:document_move' pk=document.pk %}" draggable="true"{% endif %}
    {% if perms.netbox_documentation.delete_document %}data-delete="{% url 'plugins:netbox_documentation:document_delete' pk=document.pk %}"{% endif %}>
   <i class="mdi mdi-file-document-outline netbox-explorer-icon text-primary"></i>
   <span class="netbox-explorer-label">{{ document.title }}</span>
-  {% if not document.is_published %}<span class="badge text-bg-warning">Entwurf</span>{% endif %}
+  {% if not document.is_published %}<span class="badge text-bg-warning">{% trans "Draft" %}</span>{% endif %}
   {% if document.tenant %}<small class="text-muted text-truncate mw-100"><i class="mdi mdi-domain"></i> {{ document.tenant }}</small>{% endif %}
 </a>

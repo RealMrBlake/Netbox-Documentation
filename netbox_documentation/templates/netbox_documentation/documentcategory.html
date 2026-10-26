@@ -1,9 +1,10 @@
 {% extends 'generic/object.html' %}
+{% load i18n %}
 
 {% block content %}
-<nav aria-label="breadcrumb" class="mb-3">
+<nav aria-label="{% trans "Breadcrumb" %}" class="mb-3">
   <ol class="breadcrumb mb-0">
-    <li class="breadcrumb-item"><a href="{% url 'plugins:netbox_documentation:documentcategory_tree' %}"><i class="mdi mdi-folder-home"></i> Ordner</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'plugins:netbox_documentation:documentcategory_tree' %}"><i class="mdi mdi-folder-home"></i> {% trans "Folders" %}</a></li>
     {% for ancestor in object.ancestors %}
     <li class="breadcrumb-item"><a href="{{ ancestor.get_absolute_url }}">{{ ancestor.name }}</a></li>
     {% endfor %}
@@ -14,7 +15,7 @@
   <div class="col col-md-4">
     {% if object.tenant_group or object.tenant %}
     <div class="card mb-3">
-      <h5 class="card-header">Mandantenzuordnung</h5>
+      <h5 class="card-header">{% trans "Tenancy" %}</h5>
       <div class="list-group list-group-flush">
         {% if object.tenant_group %}<a class="list-group-item list-group-item-action" href="{{ object.tenant_group.get_absolute_url }}"><i class="mdi mdi-account-group"></i> {{ object.tenant_group }}</a>{% endif %}
         {% if object.tenant %}<a class="list-group-item list-group-item-action" href="{{ object.tenant.get_absolute_url }}"><i class="mdi mdi-domain"></i> {{ object.tenant }}</a>{% endif %}
@@ -22,21 +23,21 @@
     </div>
     {% endif %}
     <div class="card">
-      <h5 class="card-header">Unterordner</h5>
+      <h5 class="card-header">{% trans "Subfolders" %}</h5>
       <div class="list-group list-group-flush">
         {% for child in object.children.all %}
           <a class="list-group-item list-group-item-action" href="{{ child.get_absolute_url }}"><i class="mdi mdi-folder"></i> {{ child.name }}</a>
-        {% empty %}<div class="list-group-item text-muted">Keine Unterordner</div>{% endfor %}
+        {% empty %}<div class="list-group-item text-muted">{% trans "No subfolders" %}</div>{% endfor %}
       </div>
     </div>
   </div>
   <div class="col col-md-8">
     <div class="card">
-      <h5 class="card-header">Dokumentationen</h5>
+      <h5 class="card-header">{% trans "Documents" %}</h5>
       <div class="list-group list-group-flush">
         {% for document in object.documents.all %}
           <a class="list-group-item list-group-item-action" href="{{ document.get_absolute_url }}"><strong>{{ document.title }}</strong>{% if document.summary %}<br><small>{{ document.summary }}</small>{% endif %}</a>
-        {% empty %}<div class="list-group-item text-muted">Keine Dokumentationen in diesem Ordner</div>{% endfor %}
+        {% empty %}<div class="list-group-item text-muted">{% trans "No documents in this folder" %}</div>{% endfor %}
       </div>
     </div>
   </div>

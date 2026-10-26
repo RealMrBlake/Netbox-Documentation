@@ -1,22 +1,23 @@
 {% extends 'base/layout.html' %}
+{% load i18n %}
 
-{% block title %}Dokumentationen{% endblock %}
+{% block title %}{% trans "Documents" %}{% endblock %}
 
 {% block content %}
 <div class="row mb-3">
   <div class="col d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <input type="search" id="doc-tree-search" class="form-control" style="max-width: 20rem;" placeholder="Dokumente & Ordner durchsuchen…">
+    <input type="search" id="doc-tree-search" class="form-control" style="max-width: 20rem;" placeholder="{% trans "Search documents & folders…" %}">
     <div class="d-flex gap-2">
       {% if perms.netbox_documentation.add_document %}
-      <a href="{% url 'plugins:netbox_documentation:document_add' %}" class="btn btn-success" id="doc-add-document" data-base="{% url 'plugins:netbox_documentation:document_add' %}"><i class="mdi mdi-plus-thick"></i> Hinzufügen</a>
+      <a href="{% url 'plugins:netbox_documentation:document_add' %}" class="btn btn-success" id="doc-add-document" data-base="{% url 'plugins:netbox_documentation:document_add' %}"><i class="mdi mdi-plus-thick"></i> {% trans "Add" %}</a>
       {% endif %}
       {% if perms.netbox_documentation.add_documentcategory %}
-      <a href="{% url 'plugins:netbox_documentation:documentcategory_add' %}" class="btn btn-outline-success" id="doc-add-folder" data-base="{% url 'plugins:netbox_documentation:documentcategory_add' %}"><i class="mdi mdi-folder-plus-outline"></i> Neuer Ordner</a>
+      <a href="{% url 'plugins:netbox_documentation:documentcategory_add' %}" class="btn btn-outline-success" id="doc-add-folder" data-base="{% url 'plugins:netbox_documentation:documentcategory_add' %}"><i class="mdi mdi-folder-plus-outline"></i> {% trans "New folder" %}</a>
       {% endif %}
-      <div class="btn-group" role="group" aria-label="Ansicht">
-        <button type="button" class="btn btn-outline-secondary" data-view="explorer" title="Explorer-Ansicht"><i class="mdi mdi-view-grid-outline"></i> Explorer</button>
-        <button type="button" class="btn btn-outline-secondary" data-view="tree" title="Baumansicht"><i class="mdi mdi-file-tree"></i> Baum</button>
-        <a href="{% url 'plugins:netbox_documentation:document_list' %}" class="btn btn-outline-secondary" title="Listenansicht"><i class="mdi mdi-format-list-bulleted"></i> Liste</a>
+      <div class="btn-group" role="group" aria-label="{% trans "View" %}">
+        <button type="button" class="btn btn-outline-secondary" data-view="explorer" title="{% trans "Explorer view" %}"><i class="mdi mdi-view-grid-outline"></i> {% trans "Explorer" %}</button>
+        <button type="button" class="btn btn-outline-secondary" data-view="tree" title="{% trans "Tree view" %}"><i class="mdi mdi-file-tree"></i> {% trans "Tree" %}</button>
+        <a href="{% url 'plugins:netbox_documentation:document_list' %}" class="btn btn-outline-secondary" title="{% trans "List view" %}"><i class="mdi mdi-format-list-bulleted"></i> {% trans "List" %}</a>
       </div>
     </div>
   </div>
@@ -25,14 +26,14 @@
 {% if tree or uncategorized %}
 <div class="card netbox-explorer" id="doc-explorer" hidden>
   <div class="card-header d-flex align-items-center gap-2 py-2">
-    <button type="button" class="btn btn-sm btn-ghost-secondary" id="doc-explorer-back" title="Zurück"><i class="mdi mdi-arrow-left"></i></button>
-    <button type="button" class="btn btn-sm btn-ghost-secondary" id="doc-explorer-up" title="Übergeordneter Ordner (Rücktaste)"><i class="mdi mdi-arrow-up"></i></button>
+    <button type="button" class="btn btn-sm btn-ghost-secondary" id="doc-explorer-back" title="{% trans "Back" %}"><i class="mdi mdi-arrow-left"></i></button>
+    <button type="button" class="btn btn-sm btn-ghost-secondary" id="doc-explorer-up" title="{% trans "Parent folder (Backspace)" %}"><i class="mdi mdi-arrow-up"></i></button>
     <nav class="netbox-explorer-address flex-grow-1" id="doc-explorer-address"></nav>
-    <a href="#" class="btn btn-sm btn-ghost-secondary d-none" id="doc-explorer-props" title="Ordnerdetails"><i class="mdi mdi-information-outline"></i></a>
+    <a href="#" class="btn btn-sm btn-ghost-secondary d-none" id="doc-explorer-props" title="{% trans "Folder details" %}"><i class="mdi mdi-information-outline"></i></a>
   </div>
   <div class="netbox-explorer-body">
     <aside class="netbox-explorer-nav">
-      <div class="netbox-explorer-nav-row" data-folder="root"><span class="netbox-explorer-twisty"></span><i class="mdi mdi-folder-home text-warning"></i><span>Dokumentationen</span></div>
+      <div class="netbox-explorer-nav-row" data-folder="root"><span class="netbox-explorer-twisty"></span><i class="mdi mdi-folder-home text-warning"></i><span>{% trans "Documents" %}</span></div>
       <ul class="list-unstyled mb-0">
         {% for node in tree %}
           {% include 'netbox_documentation/inc/explorer_nav_node.html' with node=node %}
@@ -40,7 +41,7 @@
       </ul>
     </aside>
     <section class="netbox-explorer-content">
-      <div class="netbox-explorer-pane" data-folder="root" data-parent="" data-title="Dokumentationen">
+      <div class="netbox-explorer-pane" data-folder="root" data-parent="" data-title="{% trans "Documents" %}">
         {% for node in tree %}
           {% include 'netbox_documentation/inc/explorer_folder_tile.html' with node=node %}
         {% endfor %}
@@ -52,7 +53,7 @@
         {% include 'netbox_documentation/inc/explorer_pane.html' with node=node parent='root' %}
       {% endfor %}
       <div class="netbox-explorer-pane d-none" id="doc-explorer-results"></div>
-      <p class="text-muted d-none mb-0" id="doc-explorer-nomatch">Keine Treffer gefunden.</p>
+      <p class="text-muted d-none mb-0" id="doc-explorer-nomatch">{% trans "No matches found." %}</p>
     </section>
   </div>
   <div class="card-footer py-1 small text-muted" id="doc-explorer-status"></div>
@@ -79,7 +80,7 @@
       {% endfor %}
     </ul>
     {% else %}
-    <p class="text-muted mb-0">Noch keine Dokumentationen vorhanden.</p>
+    <p class="text-muted mb-0">{% trans "No documents yet." %}</p>
     {% endif %}
   </div>
 </div>
@@ -129,6 +130,29 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  var T = {
+    status: '{{ _("{folders} folders, {documents} documents")|escapejs }}',
+    searchResults: '{{ _("Search results in all folders: ")|escapejs }}',
+    newFolder: '{{ _("New folder")|escapejs }}',
+    newDocument: '{{ _("New document")|escapejs }}',
+    exportFolderZip: '{{ _("Export folder as ZIP")|escapejs }}',
+    folderDetails: '{{ _("Folder details")|escapejs }}',
+    refresh: '{{ _("Refresh")|escapejs }}',
+    open: '{{ _("Open")|escapejs }}',
+    newSubfolder: '{{ _("New subfolder")|escapejs }}',
+    newDocumentHere: '{{ _("New document here")|escapejs }}',
+    renameEdit: '{{ _("Rename / edit")|escapejs }}',
+    exportZip: '{{ _("Export as ZIP")|escapejs }}',
+    copyLink: '{{ _("Copy link")|escapejs }}',
+    delete: '{{ _("Delete")|escapejs }}',
+    openNewTab: '{{ _("Open in new tab")|escapejs }}',
+    printPdf: '{{ _("Print / export as PDF")|escapejs }}',
+    close: '{{ _("Close")|escapejs }}',
+    emptyFolder: '{{ _("This folder is empty.")|escapejs }}',
+    unexpectedResponse: '{{ _("Unexpected response from the server ({status}).")|escapejs }}',
+    moved: '{{ _("“{document}” moved to “{folder}”.")|escapejs }}',
+    moveFailed: '{{ _("Move failed – no connection to the server.")|escapejs }}'
+  };
   var input = document.getElementById('doc-tree-search');
   var explorer = document.getElementById('doc-explorer');
   var treeView = document.getElementById('doc-tree-view');
@@ -193,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function () {
     applySearch();
   }
 
-  // Point "Hinzufügen" / "Neuer Ordner" at the open folder and return here afterwards.
+  // Point "Add" / "New folder" at the open folder and return here afterwards.
   function updateAddLinks() {
     var folder = current === 'root' ? '' : current;
     var back = window.location.pathname + (folder ? '?folder=' + folder : '');
@@ -223,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var tiles = container.querySelectorAll('.netbox-explorer-tile:not(.d-none)');
     var folders = 0, files = 0;
     tiles.forEach(function (t) { if (t.dataset.open) { folders++; } else { files++; } });
-    document.getElementById('doc-explorer-status').textContent = (prefix || '') + folders + ' Ordner, ' + files + ' Dokument(e)';
+    document.getElementById('doc-explorer-status').textContent = (prefix || '') + T.status.replace('{folders}', folders).replace('{documents}', files);
     document.getElementById('doc-explorer-nomatch').classList.toggle('d-none', tiles.length > 0 || !input.value.trim());
   }
 
@@ -254,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
     results.classList.remove('d-none');
-    updateStatus(results, 'Suchergebnisse in allen Ordnern: ');
+    updateStatus(results, T.searchResults);
   }
 
   if (explorer) {
@@ -314,41 +338,41 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!tile) {
       var here = pane(current);
       return [
-        addFolder && { icon: 'mdi-folder-plus-outline', label: 'Neuer Ordner', run: function () { go(addFolder.href); } },
-        addDoc && { icon: 'mdi-file-document-plus-outline', label: 'Neues Dokument', run: function () { go(addDoc.href); } },
+        addFolder && { icon: 'mdi-folder-plus-outline', label: T.newFolder, run: function () { go(addFolder.href); } },
+        addDoc && { icon: 'mdi-file-document-plus-outline', label: T.newDocument, run: function () { go(addDoc.href); } },
         '-',
-        here.dataset.parent && { icon: 'mdi-folder-zip-outline', label: 'Ordner als ZIP exportieren', run: function () { exportFolder(current); } },
-        here.dataset.url && { icon: 'mdi-information-outline', label: 'Ordnerdetails', run: function () { go(here.dataset.url); } },
+        here.dataset.parent && { icon: 'mdi-folder-zip-outline', label: T.exportFolderZip, run: function () { exportFolder(current); } },
+        here.dataset.url && { icon: 'mdi-information-outline', label: T.folderDetails, run: function () { go(here.dataset.url); } },
         '-',
-        { icon: 'mdi-refresh', label: 'Aktualisieren', run: function () { window.location.reload(); } }
+        { icon: 'mdi-refresh', label: T.refresh, run: function () { window.location.reload(); } }
       ];
     }
     var d = tile.dataset;
     if (d.kind === 'folder') {
       return [
-        { icon: 'mdi-folder-open-outline', label: 'Öffnen', bold: true, run: function () { if (input) input.value = ''; openFolder(d.pk); } },
-        { icon: 'mdi-information-outline', label: 'Ordnerdetails', run: function () { go(d.url); } },
+        { icon: 'mdi-folder-open-outline', label: T.open, bold: true, run: function () { if (input) input.value = ''; openFolder(d.pk); } },
+        { icon: 'mdi-information-outline', label: T.folderDetails, run: function () { go(d.url); } },
         '-',
-        addFolder && { icon: 'mdi-folder-plus-outline', label: 'Neuer Unterordner', run: function () { go(withReturn(addFolder.dataset.base, { parent: d.pk })); } },
-        addDoc && { icon: 'mdi-file-document-plus-outline', label: 'Neues Dokument hier', run: function () { go(withReturn(addDoc.dataset.base, { category: d.pk })); } },
+        addFolder && { icon: 'mdi-folder-plus-outline', label: T.newSubfolder, run: function () { go(withReturn(addFolder.dataset.base, { parent: d.pk })); } },
+        addDoc && { icon: 'mdi-file-document-plus-outline', label: T.newDocumentHere, run: function () { go(withReturn(addDoc.dataset.base, { category: d.pk })); } },
         '-',
-        d.edit && { icon: 'mdi-rename-outline', label: 'Umbenennen / Bearbeiten', run: function () { go(withReturn(d.edit)); } },
-        { icon: 'mdi-folder-zip-outline', label: 'Als ZIP exportieren', run: function () { exportFolder(d.pk); } },
-        { icon: 'mdi-link-variant', label: 'Link kopieren', run: function () { copyText(window.location.origin + window.location.pathname + '?folder=' + d.pk); } },
+        d.edit && { icon: 'mdi-rename-outline', label: T.renameEdit, run: function () { go(withReturn(d.edit)); } },
+        { icon: 'mdi-folder-zip-outline', label: T.exportZip, run: function () { exportFolder(d.pk); } },
+        { icon: 'mdi-link-variant', label: T.copyLink, run: function () { copyText(window.location.origin + window.location.pathname + '?folder=' + d.pk); } },
         '-',
-        d.delete && { icon: 'mdi-trash-can-outline', label: 'Löschen', danger: true, run: function () { go(withReturn(d.delete)); } }
+        d.delete && { icon: 'mdi-trash-can-outline', label: T.delete, danger: true, run: function () { go(withReturn(d.delete)); } }
       ];
     }
     var href = tile.getAttribute('href');
     return [
-      { icon: 'mdi-file-document-outline', label: 'Öffnen', bold: true, run: function () { go(href); } },
-      { icon: 'mdi-open-in-new', label: 'In neuem Tab öffnen', run: function () { go(href, true); } },
+      { icon: 'mdi-file-document-outline', label: T.open, bold: true, run: function () { go(href); } },
+      { icon: 'mdi-open-in-new', label: T.openNewTab, run: function () { go(href, true); } },
       '-',
-      d.edit && { icon: 'mdi-rename-outline', label: 'Umbenennen / Bearbeiten', run: function () { go(withReturn(d.edit)); } },
-      { icon: 'mdi-printer-outline', label: 'Drucken / als PDF exportieren', run: function () { go(d.print, true); } },
-      { icon: 'mdi-link-variant', label: 'Link kopieren', run: function () { copyText(new URL(href, window.location.href).href); } },
+      d.edit && { icon: 'mdi-rename-outline', label: T.renameEdit, run: function () { go(withReturn(d.edit)); } },
+      { icon: 'mdi-printer-outline', label: T.printPdf, run: function () { go(d.print, true); } },
+      { icon: 'mdi-link-variant', label: T.copyLink, run: function () { copyText(new URL(href, window.location.href).href); } },
       '-',
-      d.delete && { icon: 'mdi-trash-can-outline', label: 'Löschen', danger: true, run: function () { go(withReturn(d.delete)); } }
+      d.delete && { icon: 'mdi-trash-can-outline', label: T.delete, danger: true, run: function () { go(withReturn(d.delete)); } }
     ];
   }
 
@@ -422,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var el = document.createElement('div');
     el.className = 'toast show align-items-center border-0 text-bg-' + (ok ? 'success' : 'danger');
     el.setAttribute('role', 'alert');
-    el.innerHTML = '<div class="d-flex"><div class="toast-body"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" aria-label="Schließen"></button></div>';
+    el.innerHTML = '<div class="d-flex"><div class="toast-body"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" aria-label="' + T.close + '"></button></div>';
     el.querySelector('.toast-body').textContent = message;
     el.querySelector('.btn-close').addEventListener('click', function () { el.remove(); });
     box.appendChild(el);
@@ -446,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!p) return;
     var count = p.querySelectorAll('.netbox-explorer-tile').length;
     var empty = p.querySelector('.netbox-explorer-empty');
-    if (!count && !empty) p.insertAdjacentHTML('beforeend', '<p class="text-muted netbox-explorer-empty">Dieser Ordner ist leer.</p>');
+    if (!count && !empty) p.insertAdjacentHTML('beforeend', '<p class="text-muted netbox-explorer-empty">' + T.emptyFolder + '</p>');
     if (count && empty) empty.remove();
     if (!f) return;
     f.querySelector('small').textContent = count + ' Element(e)';
@@ -468,17 +492,17 @@ document.addEventListener('DOMContentLoaded', function () {
     body.append('category', folderId === 'root' ? '' : folderId);
     body.append('csrfmiddlewaretoken', document.querySelector('#doc-explorer-export [name=csrfmiddlewaretoken]').value);
     fetch(doc.dataset.move, { method: 'POST', body: body, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then(function (r) { return r.json().catch(function () { return { error: 'Unerwartete Antwort vom Server (' + r.status + ').' }; }); })
+      .then(function (r) { return r.json().catch(function () { return { error: T.unexpectedResponse.replace('{status}', r.status) }; }); })
       .then(function (data) {
         if (data.error) { toast(data.error, false); return; }
         pane(folderId).appendChild(doc);
         refreshFolderTile(source);
         refreshFolderTile(folderId);
         treeStale = true;
-        toast('„' + doc.title + '“ verschoben nach „' + pane(folderId).dataset.title + '“.', true);
+        toast(T.moved.replace('{document}', doc.title).replace('{folder}', pane(folderId).dataset.title), true);
         applySearch();
       })
-      .catch(function () { toast('Verschieben fehlgeschlagen – keine Verbindung zum Server.', false); });
+      .catch(function () { toast(T.moveFailed, false); });
   }
 
   if (explorer) {

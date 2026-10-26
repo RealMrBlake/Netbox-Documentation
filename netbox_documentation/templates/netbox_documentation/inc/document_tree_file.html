@@ -1,8 +1,9 @@
+{% load i18n %}
 <li class="netbox-doc-tree-item netbox-doc-tree-file" data-name="{{ document.title|lower }}">
   <div class="netbox-doc-tree-summary netbox-doc-tree-leaf">
     <i class="mdi mdi-file-document-outline text-secondary"></i>
     <a href="{{ document.get_absolute_url }}">{{ document.title }}</a>
-    {% if not document.is_published %}<span class="badge text-bg-warning">Entwurf</span>{% endif %}
+    {% if not document.is_published %}<span class="badge text-bg-warning">{% trans "Draft" %}</span>{% endif %}
     {% if document.tenant %}<span class="badge text-bg-light"><i class="mdi mdi-domain"></i> {{ document.tenant }}</span>{% endif %}
   </div>
 </li>

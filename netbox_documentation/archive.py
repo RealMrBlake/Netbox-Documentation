@@ -8,6 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.text import slugify
+from django.utils.translation import gettext as _
 from tenancy.models import Tenant, TenantGroup
 
 from .models import Document, DocumentAssignment, DocumentAttachment, DocumentCategory
@@ -113,23 +114,23 @@ def export_documents(documents):
 def _validate_archive(archive):
     infos = archive.infolist()
     if len(infos) > MAX_ENTRIES:
-        raise ArchiveFailure(f"Das Archiv enthält mehr als {MAX_ENTRIES} Dateien.")
+        raise ArchiveFailure(_("The archive contains more than %(count)s files.") % {"count": MAX_ENTRIES})
     limit = settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("max_archive_size_mb", 250) * 1024 * 1024
     if sum(info.file_size for info in infos) > limit:
-        raise ArchiveFailure("Die entpackte Gesamtgröße überschreitet das konfigurierte Limit.")
+        raise ArchiveFailure(_("The total extracted size exceeds the configured limit."))
     for info in infos:
         path = PurePosixPath(info.filename)
         if path.is_absolute() or ".." in path.parts:
-            raise ArchiveFailure("Das Archiv enthält einen unsicheren Dateipfad.")
+            raise ArchiveFailure(_("The archive contains an unsafe file path."))
         if info.compress_size and info.file_size / info.compress_size > 200:
-            raise ArchiveFailure("Das Archiv enthält eine verdächtig stark komprimierte Datei.")
+            raise ArchiveFailure(_("The archive contains a suspiciously highly compressed file."))
 
 
 def _read_json(archive, name):
     try:
         return json.loads(archive.read(name).decode("utf-8"))
     except (KeyError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ArchiveFailure("Das Archiv enthält kein gültiges manifest.json.") from exc
+        raise ArchiveFailure(_("The archive contains no valid manifest.json.")) from exc
 
 
 def _resolve_tenant_group(slug, context):
@@ -147,9 +148,10 @@ def _resolve_tenant_group(slug, context):
     group = TenantGroup.objects.filter(slug=slug).first()
     if group is None:
         raise ArchiveFailure(
-            f"{context}: Die Mandantengruppe „{slug}“ existiert auf dieser Instanz nicht. "
-            "Bitte die Mandantengruppe vorher anlegen oder den Import mit einem angepassten "
-            "manifest.json wiederholen."
+            _(
+                "%(context)s: The tenant group “%(slug)s” does not exist on this instance. "
+                "Create the tenant group first or repeat the import with an adjusted manifest.json."
+            ) % {"context": context, "slug": slug}
         )
     return group
 
@@ -167,9 +169,10 @@ def _resolve_tenant(slug, context):
     tenant = Tenant.objects.filter(slug=slug).first()
     if tenant is None:
         raise ArchiveFailure(
-            f"{context}: Der Mandant „{slug}“ existiert auf dieser Instanz nicht. "
-            "Bitte den Mandanten vorher anlegen oder den Import mit einem angepassten "
-            "manifest.json wiederholen."
+            _(
+                "%(context)s: The tenant “%(slug)s” does not exist on this instance. "
+                "Create the tenant first or repeat the import with an adjusted manifest.json."
+            ) % {"context": context, "slug": slug}
         )
     return tenant
 
@@ -181,15 +184,15 @@ def _category_from_path(names, tenancy_path=None):
         name = str(name).strip()[:100]
         if not name:
             continue
-        slug = slugify(name)[:100] or "ordner"
+        slug = slugify(name)[:100] or "folder"
         tenancy = tenancy_path[index] if index < len(tenancy_path) and isinstance(tenancy_path[index], dict) else {}
-        context = f"Ordner „{name}“"
+        context = _("Folder “%(name)s”") % {"name": name}
         tenant_group = _resolve_tenant_group(tenancy.get("tenant_group"), context)
         tenant = _resolve_tenant(tenancy.get("tenant"), context)
         if tenant and tenant_group and tenant.group_id != tenant_group.pk:
             raise ArchiveFailure(
-                f"{context}: Der Mandant „{tenant.slug}“ gehört nicht zur "
-                f"Mandantengruppe „{tenant_group.slug}“ auf dieser Instanz."
+                _("%(context)s: The tenant “%(tenant)s” does not belong to the tenant group “%(group)s” on this instance.")
+                % {"context": context, "tenant": tenant.slug, "group": tenant_group.slug}
             )
         category = DocumentCategory.objects.filter(parent=parent, slug=slug).first()
         if not category:
@@ -226,24 +229,24 @@ def import_archive(upload, update_existing=False):
     try:
         archive = ZipFile(upload)
     except BadZipFile as exc:
-        raise ArchiveFailure("Die hochgeladene Datei ist kein gültiges ZIP-Archiv.") from exc
+        raise ArchiveFailure(_("The uploaded file is not a valid ZIP archive.")) from exc
     with archive:
         _validate_archive(archive)
         manifest = _read_json(archive, "manifest.json")
         if manifest.get("format") != ARCHIVE_FORMAT or manifest.get("version") != ARCHIVE_VERSION:
-            raise ArchiveFailure("Archivformat oder Version wird nicht unterstützt.")
+            raise ArchiveFailure(_("Archive format or version is not supported."))
         records = manifest.get("documents")
         if not isinstance(records, list):
-            raise ArchiveFailure("Die Dokumentliste im Archiv ist ungültig.")
+            raise ArchiveFailure(_("The document list in the archive is invalid."))
         allowed = set(settings.PLUGINS_CONFIG.get("netbox_documentation", {}).get("allowed_object_types", []))
         created, updated, skipped_assignments = 0, 0, 0
         for record in records:
             if not isinstance(record, dict) or not record.get("title") or not record.get("body_path"):
-                raise ArchiveFailure("Das Archiv enthält einen unvollständigen Dokumenteintrag.")
+                raise ArchiveFailure(_("The archive contains an incomplete document entry."))
             try:
                 body = archive.read(record["body_path"]).decode("utf-8")
             except (KeyError, UnicodeDecodeError) as exc:
-                raise ArchiveFailure("Ein Dokumentinhalt fehlt oder ist nicht UTF-8-kodiert.") from exc
+                raise ArchiveFailure(_("A document body is missing or not UTF-8 encoded.")) from exc
             source_slug = str(record.get("slug") or record["title"])
             document = Document.objects.filter(slug=source_slug).first() if update_existing else None
             category = _category_from_path(
@@ -260,13 +263,13 @@ def import_archive(upload, update_existing=False):
             document.body_format = record.get("body_format") if record.get("body_format") in {"html", "markdown"} else "html"
             document.is_published = bool(record.get("is_published", True))
             document.category = category
-            context = f"Dokument „{document.title}“"
+            context = _("Document “%(title)s”") % {"title": document.title}
             document.tenant_group = _resolve_tenant_group(record.get("tenant_group"), context)
             document.tenant = _resolve_tenant(record.get("tenant"), context)
             if document.tenant and document.tenant_group and document.tenant.group_id != document.tenant_group_id:
                 raise ArchiveFailure(
-                    f"{context}: Der Mandant „{document.tenant.slug}“ gehört nicht zur "
-                    f"Mandantengruppe „{document.tenant_group.slug}“ auf dieser Instanz."
+                    _("%(context)s: The tenant “%(tenant)s” does not belong to the tenant group “%(group)s” on this instance.")
+                    % {"context": context, "tenant": document.tenant.slug, "group": document.tenant_group.slug}
                 )
             _save_imported_object(document, context)
             for assignment in record.get("assignments") or []:
@@ -291,12 +294,12 @@ def import_archive(upload, update_existing=False):
                 try:
                     content = archive.read(member)
                 except KeyError as exc:
-                    raise ArchiveFailure(f"Anhang {member} fehlt im Archiv.") from exc
+                    raise ArchiveFailure(_("Attachment %(name)s is missing from the archive.") % {"name": member}) from exc
                 from django.core.files.base import ContentFile
                 original_name = Path(str(item.get("original_name") or "attachment")).name[:255]
                 allowed_extensions = {".docx", ".xlsx", ".xlsm", ".pdf", ".md", ".txt", ".jpg", ".jpeg", ".png", ".gif", ".webp"}
                 if Path(original_name).suffix.lower() not in allowed_extensions:
-                    raise ArchiveFailure(f"Der Anhang {original_name} verwendet einen nicht erlaubten Dateityp.")
+                    raise ArchiveFailure(_("The attachment %(name)s uses a file type that is not allowed.") % {"name": original_name})
                 existing = document.attachments.filter(original_name=original_name, size=len(content)).first()
                 if existing:
                     if item.get("source_url"):

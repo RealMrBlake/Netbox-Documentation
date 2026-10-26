@@ -3,33 +3,36 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.conf import settings
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 from pathlib import Path
 import uuid
 from netbox.models import NetBoxModel
 
 
-BODY_FORMAT_CHOICES = (("html", "Rich Text"), ("markdown", "Markdown"))
+BODY_FORMAT_CHOICES = (("html", _("Rich text")), ("markdown", _("Markdown")))
 
 
 class Document(NetBoxModel):
-    title = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=200, unique=True)
-    body = models.TextField(blank=True, help_text="Markdown")
-    body_format = models.CharField(max_length=10, choices=BODY_FORMAT_CHOICES, default="html")
-    summary = models.CharField(max_length=500, blank=True)
-    is_published = models.BooleanField(default=True)
-    category = models.ForeignKey("DocumentCategory", on_delete=models.SET_NULL, null=True, blank=True, related_name="documents")
+    title = models.CharField(_("title"), max_length=200)
+    slug = models.SlugField(_("slug"), max_length=200, unique=True)
+    body = models.TextField(_("body"), blank=True, help_text=_("Markdown"))
+    body_format = models.CharField(_("body format"), max_length=10, choices=BODY_FORMAT_CHOICES, default="html")
+    summary = models.CharField(_("summary"), max_length=500, blank=True)
+    is_published = models.BooleanField(_("published"), default=True)
+    category = models.ForeignKey("DocumentCategory", on_delete=models.SET_NULL, null=True, blank=True, related_name="documents", verbose_name=_("folder"))
     tenant_group = models.ForeignKey(
         "tenancy.TenantGroup", on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="documentation_documents",
+        related_name="documentation_documents", verbose_name=_("tenant group"),
     )
     tenant = models.ForeignKey(
         "tenancy.Tenant", on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="documentation_documents",
+        related_name="documentation_documents", verbose_name=_("tenant"),
     )
 
     class Meta:
         ordering = ("title",)
+        verbose_name = _("document")
+        verbose_name_plural = _("documents")
         permissions = (("import_document", "Can import office documents"),)
 
     def __str__(self):
@@ -75,23 +78,24 @@ class Document(NetBoxModel):
 
 
 class DocumentCategory(NetBoxModel):
-    name = models.CharField(max_length=100)
-    slug = models.SlugField(max_length=100)
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="children")
-    description = models.CharField(max_length=500, blank=True)
+    name = models.CharField(_("name"), max_length=100)
+    slug = models.SlugField(_("slug"), max_length=100)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="children", verbose_name=_("parent folder"))
+    description = models.CharField(_("description"), max_length=500, blank=True)
     tenant_group = models.ForeignKey(
         "tenancy.TenantGroup", on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="documentation_categories",
+        related_name="documentation_categories", verbose_name=_("tenant group"),
     )
     tenant = models.ForeignKey(
         "tenancy.Tenant", on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="documentation_categories",
+        related_name="documentation_categories", verbose_name=_("tenant"),
     )
 
     class Meta:
         ordering = ("name",)
         constraints = [models.UniqueConstraint(fields=("parent", "slug"), name="%(app_label)s_%(class)s_unique_parent_slug")]
-        verbose_name_plural = "document categories"
+        verbose_name = _("folder")
+        verbose_name_plural = _("folders")
 
     def __str__(self):
         names = [self.name]
@@ -125,20 +129,22 @@ class DocumentCategory(NetBoxModel):
         seen = {self.pk} if self.pk else set()
         while parent:
             if parent.pk in seen:
-                raise ValidationError({"parent": "Ein Ordner kann nicht sich selbst oder einem Unterordner untergeordnet werden."})
+                raise ValidationError({"parent": _("A folder cannot be placed inside itself or one of its subfolders.")})
             seen.add(parent.pk)
             parent = parent.parent
 
 
 class DocumentAssignment(NetBoxModel):
-    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name="assignments")
-    assigned_object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    assigned_object_id = models.PositiveBigIntegerField()
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name="assignments", verbose_name=_("document"))
+    assigned_object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, verbose_name=_("object type"))
+    assigned_object_id = models.PositiveBigIntegerField(_("object ID"))
     assigned_object = GenericForeignKey("assigned_object_type", "assigned_object_id")
-    note = models.CharField(max_length=200, blank=True)
+    note = models.CharField(_("note"), max_length=200, blank=True)
 
     class Meta:
         ordering = ("document", "assigned_object_type", "assigned_object_id")
+        verbose_name = _("document assignment")
+        verbose_name_plural = _("document assignments")
         constraints = [models.UniqueConstraint(
             fields=("document", "assigned_object_type", "assigned_object_id"),
             name="%(app_label)s_%(class)s_unique_assignment",
@@ -158,14 +164,16 @@ def attachment_upload_path(instance, filename):
 
 
 class DocumentAttachment(NetBoxModel):
-    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name="attachments")
-    file = models.FileField(upload_to=attachment_upload_path)
-    original_name = models.CharField(max_length=255)
-    content_type = models.CharField(max_length=100, blank=True)
-    size = models.PositiveBigIntegerField(default=0)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name="attachments", verbose_name=_("document"))
+    file = models.FileField(_("file"), upload_to=attachment_upload_path)
+    original_name = models.CharField(_("original name"), max_length=255)
+    content_type = models.CharField(_("content type"), max_length=100, blank=True)
+    size = models.PositiveBigIntegerField(_("size"), default=0)
 
     class Meta:
         ordering = ("original_name",)
+        verbose_name = _("attachment")
+        verbose_name_plural = _("attachments")
 
     def __str__(self):
         return self.original_name
